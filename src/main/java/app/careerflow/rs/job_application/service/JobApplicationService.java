@@ -4,11 +4,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
 import app.careerflow.rs.company.repository.CompanyRepository;
+import app.careerflow.rs.job_application.domain.ApplicationStatus;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.dto.JobApplicationDTO;
 import app.careerflow.rs.job_application.dto.JobApplicationRequest;
@@ -36,6 +40,25 @@ public class JobApplicationService {
         return StreamSupport.stream(repository.findAll().spliterator(), false)
             .map(mapper)
             .toList();
+    }
+
+    public List<JobApplicationDTO> getAllJobApplicationsSortedBy(String field){
+        return StreamSupport.stream(repository.findAll(Sort.by(Sort.Direction.ASC, field)).spliterator(), false)
+            .map(mapper)
+            .toList();
+    }
+
+    public Page<JobApplicationDTO> getJobApplicationsPagedAndSortedBy(int pageNumber, int pageSize, String field){
+        return repository.findAll(PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, field))).map(mapper);
+    }
+
+    public Page<JobApplicationDTO> getJobApplicationsByStatus(ApplicationStatus status, int pageNumber, int pageSize){
+
+        String sort =  "appliedAt";
+        PageRequest pageable = PageRequest.of(pageNumber, pageSize, Sort.by(sort));
+
+        return repository.findByStatus(status, pageable).map(mapper);
+
     }
 
     public JobApplicationDTO getJobApplicationById(UUID id) throws Exception{

@@ -2,9 +2,9 @@ package app.careerflow.rs.user.repository;
 
 import java.util.UUID;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import app.careerflow.rs.user.domain.User;
 
-public interface UserRepository extends CrudRepository<User, UUID>{
+public interface UserRepository extends JpaRepository<User, UUID>{
 }
