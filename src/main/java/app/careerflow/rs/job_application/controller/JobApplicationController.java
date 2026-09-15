@@ -38,7 +38,7 @@ public class JobApplicationController {
     public Page<JobApplicationDTO> getApplications(
         @ModelAttribute JobApplicationFilter filter, 
         @RequestParam(defaultValue = "createdAt") String sort,
-        @RequestParam(defaultValue = "desc") Sort.Direction direction, 
+        @RequestParam(defaultValue = "DESC") Sort.Direction direction, 
         @RequestParam(defaultValue = "0") @Min(0) int page,
         @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
     ) {
