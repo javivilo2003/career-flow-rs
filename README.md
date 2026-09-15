@@ -15,7 +15,7 @@ CareerFlow API is a Spring Boot backend for tracking a job search. It stores use
 ## Tech Stack
 
 - Java 21
-- Spring Boot 4
+- Spring Boot 4.1.1
 - Spring Web MVC
 - Spring Data JPA
 - PostgreSQL
@@ -38,20 +38,30 @@ git clone <repository-url>
 cd CareerFlow
 ```
 
-Create the local PostgreSQL database expected by `src/main/resources/application.properties`:
+Create the local PostgreSQL role and database expected by
+`src/main/resources/application.properties`:
 
 ```sql
-CREATE USER careerflowtest WITH PASSWORD 'DB_PASSWORD';
-CREATE DATABASE careerflowtest OWNER DB_USERNAME;
+CREATE USER db WITH PASSWORD 'password';
+CREATE DATABASE db OWNER dbOwner;
 ```
 
-The default application configuration uses:
+For example, run those statements as a PostgreSQL administrator with `psql`:
+
+```bash
+psql -U postgres
+```
+
+The checked-in development configuration uses:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/DB_NAME
-spring.datasource.username=DB_USERNAME
-spring.datasource.password=DB_PASSWORD
+spring.datasource.url=jdbc:postgresql://localhost:5432/db
+spring.datasource.username=dbUserName
+spring.datasource.password=dbPassword
 ```
+
+Change these local-only credentials in `application.properties` if your PostgreSQL
+setup differs. Do not reuse them in a deployed environment.
 
 Start the API:
 
@@ -113,7 +123,7 @@ http://localhost:8080/api
 | Companies | `GET` | `/companies` | List all companies. |
 | Companies | `GET` | `/companies/{id}` | Get one company by UUID. |
 | Companies | `POST` | `/companies` | Create a company. |
-| Applications | `GET` | `/applications` | List all job applications. |
+| Applications | `GET` | `/applications` | Filter, sort, and paginate job applications. |
 | Applications | `GET` | `/applications/{id}` | Get one job application by UUID. |
 | Applications | `POST` | `/applications` | Create a job application. |
 | Contacts | `GET` | `/contacts` | List all contacts. |
@@ -129,7 +139,35 @@ http://localhost:8080/api
 | Follow-ups | `GET` | `/followups/{id}` | Get one follow-up task by UUID. |
 | Follow-ups | `POST` | `/followups` | Create a follow-up task. |
 
-Most `POST` endpoints accept JSON request bodies. The current controllers return successful create responses with empty bodies.
+All `POST` endpoints except `POST /companies` accept JSON request bodies. The
+company endpoint currently binds form fields. Create operations return `200 OK`
+with an empty response body.
+
+### Application query parameters
+
+`GET /applications` accepts the following optional query parameters:
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `id` | UUID | Match one application ID. |
+| `userId` | UUID | Filter by user. |
+| `companyId` | UUID | Filter by company. |
+| `position` | string | Case-insensitive partial match on position. |
+| `jobType` | string | Case-insensitive exact match on job type. |
+| `minSalary` | integer | Set the minimum salary. |
+| `maxSalary` | integer | Set the maximum salary. |
+| `status` | enum | Filter by application status. |
+| `appliedAt` | date | Filter by application date (`YYYY-MM-DD`). |
+| `createdAt` | date | Filter by creation date (`YYYY-MM-DD`). |
+| `source` | string | Case-insensitive exact match on application source. |
+| `sort` | string | Sort property; defaults to `createdAt`. See allowed values below. |
+| `direction` | `ASC` or `DESC` | Sort direction; defaults to `DESC`. |
+| `page` | integer | Zero-based page index; defaults to `0`. |
+| `size` | integer | Page size from 1 to 100; defaults to `10`. |
+
+The response is a Spring Data page object containing the results in its
+`content` field along with pagination metadata. Supported sort values are `id`,
+`createdAt`, `appliedAt`, `position`, `salary`, `status`, and `companyName`.
 
 ## Example Requests
 
@@ -143,6 +181,17 @@ curl -X POST http://localhost:8080/api/users \
     "dob": "2000-01-15",
     "cv": "/path/to/cv.pdf"
   }'
+```
+
+Create a company (this endpoint currently accepts form fields):
+
+```bash
+curl -X POST http://localhost:8080/api/companies \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "companyName=Acme" \
+  --data-urlencode "companyAddress=Madrid, Spain" \
+  --data-urlencode "bio=Software company" \
+  --data-urlencode "websiteUrl=https://example.com"
 ```
 
 Create a job application using existing user and company IDs:
@@ -167,10 +216,16 @@ curl -X POST http://localhost:8080/api/applications \
   }"
 ```
 
-List applications:
+List the first 10 applications:
 
 ```bash
 curl http://localhost:8080/api/applications
+```
+
+Filter and sort applications:
+
+```bash
+curl "http://localhost:8080/api/applications?status=APPLIED&minSalary=40000&sort=appliedAt&direction=DESC&page=0&size=20"
 ```
 
 ## Status Values
@@ -255,7 +310,10 @@ The schema includes these main tables:
 - `notes`
 - `followups`
 
-Flyway migration `V1__create_schema.sql` creates the initial schema and seed data. Later migrations update the schema as the model evolves.
+Flyway migration `V1__create_schema.sql` creates the initial schema and sample
+data. Later migrations update the schema as the model evolves. The sample user,
+company, application, contact, interview, note, and follow-up are inserted when
+the initial migration runs.
 
 ## Development Notes
 
