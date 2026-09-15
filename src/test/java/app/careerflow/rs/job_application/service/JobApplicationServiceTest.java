@@ -15,7 +15,6 @@ import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.company.repository.CompanyRepository;
 import app.careerflow.rs.job_application.mapper.JobApplicationDTOMapper;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
-import app.careerflow.rs.job_application.service.JobApplicationFilter;
 import app.careerflow.rs.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
