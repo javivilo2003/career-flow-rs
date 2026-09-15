@@ -139,6 +139,19 @@ public class GlobalExceptionHandler {
             ));
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRequests(InvalidRequestException ex){
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse(
+                new ApiError(
+                    ErrorCode.INVALID_REQUEST,
+                    ex.getMessage(),
+                    null
+                )
+            ));
+    }
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedErrors(Exception ex) {
         return ResponseEntity.internalServerError()
@@ -150,6 +163,8 @@ public class GlobalExceptionHandler {
                 )
             ));
     }
+
+    
 
 
 
