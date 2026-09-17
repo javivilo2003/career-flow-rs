@@ -1,6 +1,5 @@
 package app.careerflow.rs.interview.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,7 +20,6 @@ import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.interview.domain.Interview;
 import app.careerflow.rs.interview.domain.InterviewStatus;
-import app.careerflow.rs.interview.dto.InterviewDTO;
 import app.careerflow.rs.interview.dto.InterviewRequest;
 import app.careerflow.rs.interview.mapper.InterviewMapper;
 import app.careerflow.rs.interview.repository.InterviewRepository;

@@ -1,6 +1,5 @@
 package app.careerflow.rs.note.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,7 +20,6 @@ import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 import app.careerflow.rs.note.domain.Note;
-import app.careerflow.rs.note.dto.NoteDTO;
 import app.careerflow.rs.note.dto.NoteRequest;
 import app.careerflow.rs.note.mapper.NoteMapper;
 import app.careerflow.rs.note.repository.NoteRepository;

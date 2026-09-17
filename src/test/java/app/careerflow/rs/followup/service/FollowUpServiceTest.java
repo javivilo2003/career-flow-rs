@@ -1,6 +1,6 @@
 package app.careerflow.rs.followup.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,7 +20,6 @@ import org.springframework.data.domain.Sort;
 import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.followup.domain.FollowUp;
-import app.careerflow.rs.followup.dto.FollowUpDTO;
 import app.careerflow.rs.followup.dto.FollowUpRequest;
 import app.careerflow.rs.followup.mapper.FollowUpMapper;
 import app.careerflow.rs.followup.repository.FollowUpRepository;
