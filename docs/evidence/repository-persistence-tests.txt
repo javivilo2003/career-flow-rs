@@ -1,0 +1,33 @@
+Repository persistence test evidence
+Executed: 2026-09-17 18:08 CEST
+
+Command:
+./mvnw clean -Dtest=JobApplicationRepositoryPersistenceTest \
+  -Dtestcontainers.enabled=false \
+  -Dspring.datasource.url=jdbc:postgresql://127.0.0.1:55439/careerflow_repository_test \
+  -Dspring.datasource.username=postgres \
+  -Dspring.datasource.password= test
+
+The PostgreSQL 18.6 instance and careerflow_repository_test database were
+created immediately before this command and removed immediately afterwards.
+
+Relevant output:
+[INFO] --- clean:3.5.0:clean (default-clean) @ rs ---
+[INFO] Deleting /Users/javier/Developer/CareerFlow/target
+[INFO] Running app.careerflow.rs.job_application.repository.JobApplicationRepositoryPersistenceTest
+[INFO] Database: jdbc:postgresql://127.0.0.1:55439/careerflow_repository_test (PostgreSQL 18.6)
+[INFO] Current version of schema "public": << Empty Schema >>
+[INFO] Migrating schema "public" to version "1 - create schema"
+[INFO] Migrating schema "public" to version "2 - rename company website to website url"
+[INFO] Successfully applied 2 migrations to schema "public", now at version v2
+Hibernate: insert into companies (bio,company_address,company_name,website_url,id) values (?,?,?,?,?)
+Hibernate: insert into users (cv,dob,username,id) values (?,?,?,?)
+Hibernate: insert into job_applications (applied_at,company_id,description,job_type,position,posting_link,salary,source,status,user_id,id) values (?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: select ja1_0.id,ja1_0.applied_at,ja1_0.company_id,c1_0.id,c1_0.bio,c1_0.company_address,c1_0.company_name,c1_0.created_at,c1_0.website_url,ja1_0.created_at,ja1_0.description,ja1_0.job_type,ja1_0.position,ja1_0.posting_link,ja1_0.salary,ja1_0.source,ja1_0.status,ja1_0.user_id,u1_0.id,u1_0.created_at,u1_0.cv,u1_0.dob,u1_0.username from job_applications ja1_0 join companies c1_0 on c1_0.id=ja1_0.company_id join users u1_0 on u1_0.id=ja1_0.user_id where ja1_0.id=?
+[DEBUG] Executing prepared SQL statement [INSERT INTO job_applications
+    (user_id, company_id, position, job_type, status, source)
+VALUES (?, ?, ?, ?, 'NOT_A_STATUS', ?)
+]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  7.262 s
