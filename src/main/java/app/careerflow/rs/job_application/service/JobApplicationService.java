@@ -14,6 +14,9 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
@@ -43,6 +46,7 @@ public class JobApplicationService {
         "status", "status",
         "companyName", "company.companyName"
     );
+    private static final Logger log = LoggerFactory.getLogger(JobApplicationService.class);
 
 
     public JobApplicationService(JobApplicationRepository repository, JobApplicationDTOMapper mapper, CompanyRepository companyRepository, UserRepository userRepository) {
@@ -58,24 +62,28 @@ public class JobApplicationService {
 
         Specification<JobApplication> specification = createSpecification(filter);
 
-        return repository.findAll(specification, pageable).map(mapper);
+        log.info(
+            "Listing application page={} size={} sort={} direction={}",
+            page,
+            size,
+            sortField,
+            direction
+        );
 
+        return repository.findAll(specification, pageable).map(mapper);
     }
 
-    private Sort createSafeSort(
-    String requestedField,
-    Sort.Direction direction
-) {
+    private Sort createSafeSort(String requestedField, Sort.Direction direction) {
     String entityProperty = SORT_FIELDS.get(requestedField);
 
-    if (entityProperty == null) {
-        throw new InvalidRequestException(
-            "Unsupported sorting field: " + requestedField
-        );
-    }
+        if (entityProperty == null) {
+            throw new InvalidRequestException(
+                "Unsupported sorting field: " + requestedField
+            );
+        }
 
-    return Sort.by(direction, entityProperty);
-}
+        return Sort.by(direction, entityProperty);
+    }
 
     private Specification<JobApplication> createSpecification(
         JobApplicationFilter filter
@@ -219,6 +227,14 @@ public class JobApplicationService {
         JobApplication application = mapper.toEntity(request, company, user);
 
         repository.save(application);
+
+        log.info(
+            "Created application id={} userId={} companyId={} status={}",
+            application.getId(),
+            request.userId(),
+            request.companyId(),
+            request.status()
+        );
     }
 
 

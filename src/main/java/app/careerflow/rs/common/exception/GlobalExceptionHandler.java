@@ -2,6 +2,9 @@ package app.careerflow.rs.common.exception;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,11 +20,17 @@ import app.careerflow.rs.common.error.ApiErrorDetails;
 import app.careerflow.rs.common.error.ErrorCode;
 import app.careerflow.rs.common.error.ErrorResponse;
 
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex){
+
+        log.error("Unexpected application error", ex);
 
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
@@ -40,6 +49,8 @@ public class GlobalExceptionHandler {
                 fieldError.getDefaultMessage()
             ))
             .toList();
+
+        log.error("Unexpected application error", ex);
 
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(
@@ -62,6 +73,8 @@ public class GlobalExceptionHandler {
             )
         );
 
+        log.warn("Invalid request: {}", ex.getMessage());
+
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(
                 new ApiError(
@@ -81,6 +94,8 @@ public class GlobalExceptionHandler {
                 ex.getParameterName() + " is required."
             )
         );
+
+        log.warn("Invalid request: {}", ex.getMessage());
 
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(
@@ -105,6 +120,8 @@ public class GlobalExceptionHandler {
                 )))
             .toList();
 
+        log.error("Unexpected application error", ex);
+
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(
                 new ApiError(
@@ -117,6 +134,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMalformedJson(HttpMessageNotReadableException ex) {
+        log.warn("Invalid request: {}", ex.getMessage());
+
+
         return ResponseEntity.badRequest()
         .body(new ErrorResponse(
             new ApiError(
@@ -129,6 +149,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflicts(ConflictException ex){
+        log.error("Unexpected application error", ex);  
+
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(new ErrorResponse(
                 new ApiError(
@@ -141,6 +163,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRequests(InvalidRequestException ex){
+        log.warn("Invalid request: {}", ex.getMessage());
+
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(
                 new ApiError(
@@ -154,6 +178,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedErrors(Exception ex) {
+        log.error("Unexpected application error", ex);
+
         return ResponseEntity.internalServerError()
             .body(new ErrorResponse(
                 new ApiError(
