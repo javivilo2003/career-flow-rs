@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,7 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
+import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.followup.domain.FollowUp;
 import app.careerflow.rs.followup.dto.FollowUpDTO;
@@ -35,15 +36,15 @@ class FollowUpServiceTest {
     @InjectMocks private FollowUpService service;
 
     @Test
-    void getAllFollowUpsMapsEveryEntity() {
-        FollowUp followUp = FollowUp.builder().build();
-        when(repository.findAll()).thenReturn(List.of(followUp));
-        when(mapper.apply(followUp)).thenReturn(
-            new FollowUpDTO(UUID.randomUUID(), "Send email", LocalDate.now(), false)
-        );
+    void unsupportedSortingFieldIsRejected() {
+        FollowUpFilter filter = new FollowUpFilter(null, null, null, null, null, null);
 
-        assertThat(service.getAllFollowUps()).hasSize(1);
-        verify(mapper).apply(followUp);
+        assertThatThrownBy(() -> service.getFollowUps(
+            filter, 0, 10, "unknownField", Sort.Direction.ASC
+        ))
+            .isInstanceOf(InvalidRequestException.class)
+            .hasMessage("Unsupported sorting field: unknownField");
+        verifyNoInteractions(repository);
     }
 
     @Test

@@ -6,7 +6,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
+import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
@@ -34,15 +35,15 @@ class NoteServiceTest {
     @InjectMocks private NoteService service;
 
     @Test
-    void getAllNotesMapsEveryEntity() {
-        Note note = Note.builder().build();
-        when(repository.findAll()).thenReturn(List.of(note));
-        when(mapper.apply(note)).thenReturn(
-            new NoteDTO(UUID.randomUUID(), UUID.randomUUID(), "Follow up")
-        );
+    void unsupportedSortingFieldIsRejected() {
+        NoteFilter filter = new NoteFilter(null, null, null, null);
 
-        assertThat(service.getAllNotes()).hasSize(1);
-        verify(mapper).apply(note);
+        assertThatThrownBy(() -> service.getNotes(
+            filter, 0, 10, "unknownField", Sort.Direction.ASC
+        ))
+            .isInstanceOf(InvalidRequestException.class)
+            .hasMessage("Unsupported sorting field: unknownField");
+        verifyNoInteractions(repository);
     }
 
     @Test

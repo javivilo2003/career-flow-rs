@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,7 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
+import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.interview.domain.Interview;
 import app.careerflow.rs.interview.domain.InterviewStatus;
@@ -36,16 +37,15 @@ class InterviewServiceTest {
     @InjectMocks private InterviewService service;
 
     @Test
-    void getAllInterviewsMapsEveryEntity() {
-        Interview interview = Interview.builder().build();
-        when(repository.findAll()).thenReturn(List.of(interview));
-        when(mapper.apply(interview)).thenReturn(new InterviewDTO(
-            UUID.randomUUID(), UUID.randomUUID(), "Technical",
-            InterviewStatus.SCHEDULED, LocalDate.now(), null
-        ));
+    void unsupportedSortingFieldIsRejected() {
+        InterviewFilter filter = new InterviewFilter(null, null, null, null, null, null);
 
-        assertThat(service.getAllInterviews()).hasSize(1);
-        verify(mapper).apply(interview);
+        assertThatThrownBy(() -> service.getInterviews(
+            filter, 0, 10, "unknownField", Sort.Direction.ASC
+        ))
+            .isInstanceOf(InvalidRequestException.class)
+            .hasMessage("Unsupported sorting field: unknownField");
+        verifyNoInteractions(repository);
     }
 
     @Test

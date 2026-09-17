@@ -2,6 +2,7 @@ package app.careerflow.rs.followup.controller;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,16 +39,32 @@ class FollowUpControllerTest {
     @MockitoBean private FollowUpService service;
 
     @Test
-    void getAllFollowUpsReturnsServiceResults() throws Exception {
+    void getFollowUpsPassesFiltersAndPaginationToService() throws Exception {
         UUID applicationId = UUID.randomUUID();
-        when(service.getAllFollowUps()).thenReturn(List.of(
-            new FollowUpDTO(applicationId, "Send email", LocalDate.of(2026, 10, 1), false)
+        when(service.getFollowUps(
+            argThat(filter -> applicationId.equals(filter.applicationId())
+                && Boolean.FALSE.equals(filter.completed())),
+            eq(0), eq(5), eq("dueDate"), eq(Sort.Direction.ASC)
+        )).thenReturn(new PageImpl<>(
+            List.of(new FollowUpDTO(applicationId, "Send email", LocalDate.of(2026, 10, 1), false)),
+            PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "dueDate")),
+            1
         ));
 
-        mockMvc.perform(get("/api/followups"))
+        mockMvc.perform(get("/api/followups")
+                .param("applicationId", applicationId.toString())
+                .param("completed", "false")
+                .param("size", "5"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].applicationId").value(applicationId.toString()))
-            .andExpect(jsonPath("$[0].title").value("Send email"));
+            .andExpect(jsonPath("$.content[0].applicationId").value(applicationId.toString()))
+            .andExpect(jsonPath("$.content[0].title").value("Send email"))
+            .andExpect(jsonPath("$.size").value(5));
+
+        verify(service).getFollowUps(
+            argThat(filter -> applicationId.equals(filter.applicationId())
+                && Boolean.FALSE.equals(filter.completed())),
+            eq(0), eq(5), eq("dueDate"), eq(Sort.Direction.ASC)
+        );
     }
 
     @Test

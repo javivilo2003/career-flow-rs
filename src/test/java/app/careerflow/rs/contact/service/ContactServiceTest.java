@@ -2,12 +2,10 @@ package app.careerflow.rs.contact.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,7 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
+import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
 import app.careerflow.rs.company.repository.CompanyRepository;
@@ -34,15 +34,15 @@ class ContactServiceTest {
     @InjectMocks private ContactService service;
 
     @Test
-    void getAllContactsMapsEveryEntity() {
-        Contact contact = Contact.builder().build();
-        when(repository.findAll()).thenReturn(List.of(contact));
-        when(mapper.apply(contact)).thenReturn(new app.careerflow.rs.contact.dto.ContactDTO(
-            UUID.randomUUID(), UUID.randomUUID(), "Ada", null, null, "CTO"
-        ));
+    void unsupportedSortingFieldIsRejected() {
+        ContactFilter filter = new ContactFilter(null, null, null, null, null);
 
-        assertThat(service.getAllContacts()).hasSize(1);
-        verify(mapper).apply(contact);
+        assertThatThrownBy(() -> service.getContacts(
+            filter, 0, 10, "unknownField", Sort.Direction.ASC
+        ))
+            .isInstanceOf(InvalidRequestException.class)
+            .hasMessage("Unsupported sorting field: unknownField");
+        verifyNoInteractions(repository);
     }
 
     @Test

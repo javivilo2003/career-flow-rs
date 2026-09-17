@@ -2,6 +2,7 @@ package app.careerflow.rs.note.controller;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,16 +38,33 @@ class NoteControllerTest {
     @MockitoBean private NoteService service;
 
     @Test
-    void getAllNotesReturnsServiceResults() throws Exception {
+    void getNotesPassesFiltersAndPaginationToService() throws Exception {
         UUID id = UUID.randomUUID();
-        when(service.getAllNotes()).thenReturn(List.of(
-            new NoteDTO(id, UUID.randomUUID(), "Follow up")
+        UUID applicationId = UUID.randomUUID();
+        when(service.getNotes(
+            argThat(filter -> applicationId.equals(filter.jobApplicationId())
+                && "Follow up".equals(filter.content())),
+            eq(0), eq(5), eq("createdAt"), eq(Sort.Direction.DESC)
+        )).thenReturn(new PageImpl<>(
+            List.of(new NoteDTO(id, applicationId, "Follow up")),
+            PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt")),
+            1
         ));
 
-        mockMvc.perform(get("/api/notes"))
+        mockMvc.perform(get("/api/notes")
+                .param("jobApplicationId", applicationId.toString())
+                .param("content", "Follow up")
+                .param("size", "5"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(id.toString()))
-            .andExpect(jsonPath("$[0].content").value("Follow up"));
+            .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+            .andExpect(jsonPath("$.content[0].content").value("Follow up"))
+            .andExpect(jsonPath("$.size").value(5));
+
+        verify(service).getNotes(
+            argThat(filter -> applicationId.equals(filter.jobApplicationId())
+                && "Follow up".equals(filter.content())),
+            eq(0), eq(5), eq("createdAt"), eq(Sort.Direction.DESC)
+        );
     }
 
     @Test

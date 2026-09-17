@@ -2,6 +2,7 @@ package app.careerflow.rs.contact.controller;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,16 +38,36 @@ class ContactControllerTest {
     @MockitoBean private ContactService service;
 
     @Test
-    void getAllContactsReturnsServiceResults() throws Exception {
+    void getContactsPassesFiltersAndPaginationToService() throws Exception {
         UUID id = UUID.randomUUID();
-        when(service.getAllContacts()).thenReturn(List.of(
-            new ContactDTO(id, UUID.randomUUID(), "Ada", "123", "ada@example.com", "CTO")
+        UUID companyId = UUID.randomUUID();
+        when(service.getContacts(
+            argThat(filter -> companyId.equals(filter.companyId()) && "Ada".equals(filter.name())),
+            eq(1), eq(5), eq("jobRole"), eq(Sort.Direction.DESC)
+        )).thenReturn(new PageImpl<>(
+            List.of(new ContactDTO(id, companyId, "Ada", "123", "ada@example.com", "CTO")),
+            PageRequest.of(1, 5, Sort.by(Sort.Direction.DESC, "jobRole")),
+            6
         ));
 
-        mockMvc.perform(get("/api/contacts"))
+        mockMvc.perform(get("/api/contacts")
+                .param("companyId", companyId.toString())
+                .param("name", "Ada")
+                .param("page", "1")
+                .param("size", "5")
+                .param("sort", "jobRole")
+                .param("direction", "DESC"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(id.toString()))
-            .andExpect(jsonPath("$[0].name").value("Ada"));
+            .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+            .andExpect(jsonPath("$.content[0].name").value("Ada"))
+            .andExpect(jsonPath("$.number").value(1))
+            .andExpect(jsonPath("$.size").value(5))
+            .andExpect(jsonPath("$.totalElements").value(6));
+
+        verify(service).getContacts(
+            argThat(filter -> companyId.equals(filter.companyId()) && "Ada".equals(filter.name())),
+            eq(1), eq(5), eq("jobRole"), eq(Sort.Direction.DESC)
+        );
     }
 
     @Test

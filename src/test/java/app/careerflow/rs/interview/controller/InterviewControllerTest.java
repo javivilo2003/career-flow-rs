@@ -2,6 +2,7 @@ package app.careerflow.rs.interview.controller;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,17 +40,35 @@ class InterviewControllerTest {
     @MockitoBean private InterviewService service;
 
     @Test
-    void getAllInterviewsReturnsServiceResults() throws Exception {
+    void getInterviewsPassesFiltersAndPaginationToService() throws Exception {
         UUID id = UUID.randomUUID();
-        when(service.getAllInterviews()).thenReturn(List.of(new InterviewDTO(
-            id, UUID.randomUUID(), "Technical", InterviewStatus.SCHEDULED,
-            LocalDate.of(2026, 10, 2), null
-        )));
+        UUID applicationId = UUID.randomUUID();
+        when(service.getInterviews(
+            argThat(filter -> applicationId.equals(filter.jobApplicationId())
+                && filter.status() == InterviewStatus.SCHEDULED),
+            eq(0), eq(5), eq("interviewDate"), eq(Sort.Direction.ASC)
+        )).thenReturn(new PageImpl<>(List.of(new InterviewDTO(
+                id, applicationId, "Technical", InterviewStatus.SCHEDULED,
+                LocalDate.of(2026, 10, 2), null
+            )),
+            PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "interviewDate")),
+            1
+        ));
 
-        mockMvc.perform(get("/api/interviews"))
+        mockMvc.perform(get("/api/interviews")
+                .param("jobApplicationId", applicationId.toString())
+                .param("status", "SCHEDULED")
+                .param("size", "5"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(id.toString()))
-            .andExpect(jsonPath("$[0].status").value("SCHEDULED"));
+            .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+            .andExpect(jsonPath("$.content[0].status").value("SCHEDULED"))
+            .andExpect(jsonPath("$.size").value(5));
+
+        verify(service).getInterviews(
+            argThat(filter -> applicationId.equals(filter.jobApplicationId())
+                && filter.status() == InterviewStatus.SCHEDULED),
+            eq(0), eq(5), eq("interviewDate"), eq(Sort.Direction.ASC)
+        );
     }
 
     @Test
