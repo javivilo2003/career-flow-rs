@@ -11,7 +11,7 @@ import app.careerflow.rs.job_application.dto.JobApplicationRequest;
 import app.careerflow.rs.user.domain.User;
 
 @Service
-public class JobApplicationDTOMapper implements Function<JobApplication, JobApplicationDTO>{
+public class JobApplicationMapper implements Function<JobApplication, JobApplicationDTO>{
 
     @Override
     public JobApplicationDTO apply(JobApplication t) {

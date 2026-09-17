@@ -14,6 +14,7 @@ import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.note.dto.NoteDTO;
 import app.careerflow.rs.note.dto.NoteRequest;
 import app.careerflow.rs.note.service.NoteService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -36,7 +37,7 @@ public class NoteController {
     }
 
     @PostMapping()
-    public void addNewNote(@RequestBody NoteRequest request) throws ResourceNotFoundException{
+    public void addNewNote(@Valid @RequestBody NoteRequest request) throws ResourceNotFoundException{
         service.addNewNote(request);
     }
 }

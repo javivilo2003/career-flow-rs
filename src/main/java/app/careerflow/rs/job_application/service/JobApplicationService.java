@@ -24,7 +24,7 @@ import app.careerflow.rs.company.repository.CompanyRepository;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.dto.JobApplicationDTO;
 import app.careerflow.rs.job_application.dto.JobApplicationRequest;
-import app.careerflow.rs.job_application.mapper.JobApplicationDTOMapper;
+import app.careerflow.rs.job_application.mapper.JobApplicationMapper;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 import app.careerflow.rs.user.domain.User;
 import app.careerflow.rs.user.repository.UserRepository;
@@ -34,7 +34,7 @@ import jakarta.persistence.criteria.Predicate;
 public class JobApplicationService {
     
     private final JobApplicationRepository repository;
-    private final JobApplicationDTOMapper mapper;
+    private final JobApplicationMapper mapper;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private static final Map<String, String> SORT_FIELDS = Map.of(
@@ -49,7 +49,7 @@ public class JobApplicationService {
     private static final Logger log = LoggerFactory.getLogger(JobApplicationService.class);
 
 
-    public JobApplicationService(JobApplicationRepository repository, JobApplicationDTOMapper mapper, CompanyRepository companyRepository, UserRepository userRepository) {
+    public JobApplicationService(JobApplicationRepository repository, JobApplicationMapper mapper, CompanyRepository companyRepository, UserRepository userRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.companyRepository = companyRepository;

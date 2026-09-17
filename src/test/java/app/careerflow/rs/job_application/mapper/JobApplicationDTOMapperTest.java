@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class JobApplicationDTOMapperTest {
 
-    private JobApplicationDTOMapper mapper = new JobApplicationDTOMapper();
+    private JobApplicationMapper mapper = new JobApplicationMapper();
     
     @Test
     void mapsEntityToDto() {

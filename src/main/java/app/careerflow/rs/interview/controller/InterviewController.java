@@ -14,6 +14,7 @@ import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.interview.dto.InterviewDTO;
 import app.careerflow.rs.interview.dto.InterviewRequest;
 import app.careerflow.rs.interview.service.InterviewService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/interviews")
@@ -36,7 +37,7 @@ public class InterviewController {
     }
 
     @PostMapping
-    public void addNewInterview(@RequestBody InterviewRequest interview) throws ResourceNotFoundException{
+    public void addNewInterview(@Valid @RequestBody InterviewRequest interview) throws ResourceNotFoundException{
         service.addNewInterview(interview);
     }
 }

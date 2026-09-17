@@ -9,7 +9,7 @@ public record FollowUpRequest(
     @NotNull(message = "Application Id not found.") UUID applicationId,
     @NotNull(message = "Title not found.") String title,
     @NotNull(message = "Due date not specified") LocalDate dueDate,
-    @NotNull(message = "Completion of follow up not specified") boolean completed
+    @NotNull(message = "Completion of follow up not specified") Boolean completed
 ) {
     
 }

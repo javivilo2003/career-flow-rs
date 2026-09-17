@@ -42,7 +42,7 @@ public class CompanyService {
         this.repository = repository;
     }
 
-    public Page<CompanyDTO> getAllCompanies(CompanyFilter filter, int page, int size, String sortField, Direction direction){
+    public Page<CompanyDTO> getCompanies(CompanyFilter filter, int page, int size, String sortField, Direction direction){
         Sort sort = createSafeSort(sortField, direction);
         Pageable pageable = PageRequest.of(page, size, sort);
 

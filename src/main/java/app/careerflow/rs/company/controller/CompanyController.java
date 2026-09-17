@@ -44,7 +44,7 @@ public class CompanyController {
         @RequestParam(defaultValue = "createdAt") String sort,
         @RequestParam(defaultValue = "DESC") Direction direction
     ) {
-        return service.getAllCompanies(filter, page, size, sort, direction);
+        return service.getCompanies(filter, page, size, sort, direction);
     }
     
     @GetMapping("{id}")
