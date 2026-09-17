@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,8 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class NoteService {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(NoteService.class);
     private final NoteRepository repository;
     private final JobApplicationRepository jobApplicationRepository;
     private final NoteMapper mapper;
@@ -49,6 +52,13 @@ public class NoteService {
         String sortField,
         Sort.Direction direction
     ) {
+        log.debug(
+            "Listing notes page={} size={} sort={} direction={}",
+            page,
+            size,
+            sortField,
+            direction
+        );
         Pageable pageable = PageRequest.of(page, size, createSafeSort(sortField, direction));
         return repository.findAll(createSpecification(filter), pageable).map(mapper);
     }
@@ -91,6 +101,7 @@ public class NoteService {
     }
 
     public NoteDTO getNoteById(UUID id) throws ResourceNotFoundException{
+        log.debug("Fetching note id={}", id);
         return repository.findById(id)
             .map(mapper)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
@@ -102,6 +113,11 @@ public class NoteService {
 
         Note note = mapper.toEntityNote(request, application);
         repository.save(note);
+        log.info(
+            "Created note id={} applicationId={}",
+            note.getId(),
+            request.jobApplicationId()
+        );
     }
     
 }

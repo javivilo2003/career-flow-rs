@@ -62,7 +62,7 @@ public class JobApplicationService {
 
         Specification<JobApplication> specification = createSpecification(filter);
 
-        log.info(
+        log.debug(
             "Listing application page={} size={} sort={} direction={}",
             page,
             size,
@@ -212,6 +212,7 @@ public class JobApplicationService {
     }
 
     public JobApplicationDTO getJobApplicationById(UUID id) throws Exception{
+        log.debug("Fetching application id={}", id);
         return repository.findById(id)
             .map(mapper)    
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));

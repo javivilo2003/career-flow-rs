@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,7 @@ import jakarta.persistence.criteria.Predicate;
 @Service
 public class ContactService {
 
+    private static final Logger log = LoggerFactory.getLogger(ContactService.class);
     private final ContactRepository repository;
     private final CompanyRepository companyRepository;
     private final ContactMapper mapper;
@@ -50,6 +53,13 @@ public class ContactService {
         String sortField,
         Sort.Direction direction
     ) {
+        log.debug(
+            "Listing contacts page={} size={} sort={} direction={}",
+            page,
+            size,
+            sortField,
+            direction
+        );
         Pageable pageable = PageRequest.of(page, size, createSafeSort(sortField, direction));
         return repository.findAll(createSpecification(filter), pageable).map(mapper);
     }
@@ -98,6 +108,7 @@ public class ContactService {
     }
 
     public ContactDTO getContactById(UUID id)throws ResourceNotFoundException{
+        log.debug("Fetching contact id={}", id);
         return repository.findById(id)
             .map(mapper)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
@@ -110,6 +121,7 @@ public class ContactService {
         Contact contact = mapper.toEntityContact(request, company);
 
         repository.save(contact);
+        log.info("Created contact id={} companyId={}", contact.getId(), request.companyId());
     }
     
 }

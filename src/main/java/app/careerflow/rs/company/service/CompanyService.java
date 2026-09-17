@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,8 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class CompanyService {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
     private final CompanyRepository repository;
     private CompanyMapper mapper = new CompanyMapper();
     private static final Map<String, String> SORT_FIELDS = Map.of(
@@ -43,6 +46,14 @@ public class CompanyService {
     }
 
     public Page<CompanyDTO> getCompanies(CompanyFilter filter, int page, int size, String sortField, Direction direction){
+        log.debug(
+            "Listing companies page={} size={} sort={} direction={}",
+            page,
+            size,
+            sortField,
+            direction
+        );
+
         Sort sort = createSafeSort(sortField, direction);
         Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -136,6 +147,7 @@ public class CompanyService {
     }
 
     public CompanyDTO getCompanyById(UUID id) throws Exception{
+        log.debug("Fetching company id={}", id);
         return repository.findById(id)
             .map(mapper)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
@@ -144,5 +156,6 @@ public class CompanyService {
     public void addNewCompany(CompanyRequest request){
         Company company = mapper.toEntityCompany(request);
         repository.save(company);
+        log.info("Created company id={}", company.getId());
     }
 }

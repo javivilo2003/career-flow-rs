@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +27,8 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class InterviewService {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(InterviewService.class);
     private final InterviewRepository repository;
     private final JobApplicationRepository jobApplicationRepository;
     private final InterviewMapper mapper;
@@ -50,6 +53,13 @@ public class InterviewService {
         String sortField,
         Sort.Direction direction
     ) {
+        log.debug(
+            "Listing interviews page={} size={} sort={} direction={}",
+            page,
+            size,
+            sortField,
+            direction
+        );
         Pageable pageable = PageRequest.of(page, size, createSafeSort(sortField, direction));
         return repository.findAll(createSpecification(filter), pageable).map(mapper);
     }
@@ -104,6 +114,7 @@ public class InterviewService {
     }
 
     public InterviewDTO getInterviewById(UUID id) throws Exception{
+        log.debug("Fetching interview id={}", id);
         return repository.findById(id)
             .map(mapper)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
@@ -115,5 +126,11 @@ public class InterviewService {
 
         Interview interview = mapper.toEntityInterview(request, application);
         repository.save(interview);
+        log.info(
+            "Created interview id={} applicationId={} status={}",
+            interview.getId(),
+            request.jobApplicationId(),
+            request.status()
+        );
     }
 }
