@@ -38,8 +38,7 @@ git clone <repository-url>
 cd CareerFlow
 ```
 
-Create the local PostgreSQL role and database expected by
-`src/main/resources/application.properties`:
+Create a local PostgreSQL role and database. For example:
 
 ```sql
 CREATE USER db WITH PASSWORD 'password';
@@ -52,16 +51,28 @@ For example, run those statements as a PostgreSQL administrator with `psql`:
 psql -U postgres
 ```
 
-The checked-in development configuration uses:
+Configure the application through environment variables. Datasource credentials
+are not stored in `application.properties`.
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/db
-spring.datasource.username=dbUserName
-spring.datasource.password=dbPassword
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `SPRING_PROFILES_ACTIVE` | Yes | Use `local` for the current container configuration. |
+| `DB_URL` | Yes | PostgreSQL JDBC URL. |
+| `DB_USERNAME` | Yes | PostgreSQL username. |
+| `DB_PASSWORD` | Yes | PostgreSQL password. |
+
+For example:
+
+```bash
+export SPRING_PROFILES_ACTIVE=local
+export DB_URL=jdbc:postgresql://localhost:5432/db
+export DB_USERNAME=db
+export DB_PASSWORD=password
 ```
 
-Change these local-only credentials in `application.properties` if your PostgreSQL
-setup differs. Do not reuse them in a deployed environment.
+The database name and credentials must match the PostgreSQL role and database
+you created. Do not commit real credentials or reuse local credentials in a
+deployed environment.
 
 Start the API:
 
@@ -139,9 +150,9 @@ http://localhost:8080/api
 | Follow-ups | `GET` | `/followups/{id}` | Get one follow-up task by UUID. |
 | Follow-ups | `POST` | `/followups` | Create a follow-up task. |
 
-All `POST` endpoints except `POST /companies` accept JSON request bodies. The
-company endpoint currently binds form fields. Create operations return `200 OK`
-with an empty response body.
+All `POST` endpoints accept JSON request bodies. `POST /companies` binds its JSON
+body to a `CompanyRequest`. Create operations return `200 OK` with an empty
+response body.
 
 ### Application query parameters
 
@@ -183,15 +194,17 @@ curl -X POST http://localhost:8080/api/users \
   }'
 ```
 
-Create a company (this endpoint currently accepts form fields):
+Create a company with a JSON `CompanyRequest`:
 
 ```bash
 curl -X POST http://localhost:8080/api/companies \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  --data-urlencode "companyName=Acme" \
-  --data-urlencode "companyAddress=Madrid, Spain" \
-  --data-urlencode "bio=Software company" \
-  --data-urlencode "websiteUrl=https://example.com"
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Acme",
+    "companyAddress": "Madrid, Spain",
+    "bio": "Software company",
+    "websiteUrl": "https://example.com"
+  }'
 ```
 
 Create a job application using existing user and company IDs:

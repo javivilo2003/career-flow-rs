@@ -1,0 +1,11 @@
+target
+.git
+.github
+.idea
+.vscode
+
+.env
+.env.*
+
+README.md
+api-plan.md
