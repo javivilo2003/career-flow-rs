@@ -1,6 +1,7 @@
 package app.careerflow.rs.interview.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.interview.domain.Interview;
 import app.careerflow.rs.interview.domain.InterviewStatus;
+import app.careerflow.rs.interview.dto.InterviewDTO;
 import app.careerflow.rs.interview.dto.InterviewRequest;
 import app.careerflow.rs.interview.mapper.InterviewMapper;
 import app.careerflow.rs.interview.repository.InterviewRepository;
@@ -84,5 +86,36 @@ class InterviewServiceTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage(applicationId + " not found.");
         verifyNoInteractions(mapper, repository);
+    }
+
+    @Test
+    void updateInterviewResolvesApplicationAndSavesChanges() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(applicationId).build();
+        Interview interview = Interview.builder().id(id).build();
+        InterviewRequest request = new InterviewRequest(
+            applicationId, "Technical", InterviewStatus.RESCHEDULED, LocalDate.now(), "Review API design"
+        );
+        InterviewDTO dto = new InterviewDTO(
+            id, applicationId, request.stage(), request.status(), request.interviewDate(), request.notes()
+        );
+        when(jobApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(repository.findById(id)).thenReturn(Optional.of(interview));
+        when(mapper.apply(interview)).thenReturn(dto);
+
+        assertThat(service.updateInterview(id, request)).isSameAs(dto);
+        verify(repository).save(interview);
+    }
+
+    @Test
+    void deleteInterviewDeletesExistingInterview() throws Exception {
+        UUID id = UUID.randomUUID();
+        Interview interview = Interview.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(interview));
+
+        service.deleteById(id);
+
+        verify(repository).delete(interview);
     }
 }

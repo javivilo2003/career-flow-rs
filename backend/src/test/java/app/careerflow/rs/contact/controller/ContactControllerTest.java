@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -107,5 +109,32 @@ class ContactControllerTest {
             .andExpect(jsonPath("$.error.details[*].field", hasItem("jobRole")));
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void updateContactReturnsUpdatedContact() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
+        when(service.updateContact(eq(id), argThat(request -> companyId.equals(request.companyId()))))
+            .thenReturn(new ContactDTO(id, companyId, "Ada", "123", "ada@example.com", "CTO"));
+
+        mockMvc.perform(put("/api/contacts/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"companyId":"%s","name":"Ada","phone":"123","email":"ada@example.com","jobRole":"CTO"}
+                    """.formatted(companyId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(id.toString()))
+            .andExpect(jsonPath("$.name").value("Ada"));
+    }
+
+    @Test
+    void deleteContactReturnsNoContent() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/contacts/{id}", id))
+            .andExpect(status().isNoContent());
+
+        verify(service).deleteById(id);
     }
 }

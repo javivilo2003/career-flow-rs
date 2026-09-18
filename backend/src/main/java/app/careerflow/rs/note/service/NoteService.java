@@ -120,4 +120,24 @@ public class NoteService {
         );
     }
     
+    public NoteDTO updateNoteById(UUID id, NoteRequest request) throws ResourceNotFoundException{
+        Note note = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+        JobApplication application = jobApplicationRepository.findById(request.jobApplicationId())
+            .orElseThrow(() -> new ResourceNotFoundException(request.jobApplicationId() + " not found."));
+
+        note.setApplication(application);
+        note.setContent(request.content());
+
+        repository.save(note);
+        
+        NoteDTO dto = mapper.apply(note);
+
+        return dto;
+    }
+
+    public void deleteNoteById(UUID id) throws ResourceNotFoundException{
+        Note note = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+        
+        repository.delete(note);
+    }
 }

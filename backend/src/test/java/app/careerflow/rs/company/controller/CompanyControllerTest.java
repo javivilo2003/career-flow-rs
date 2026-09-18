@@ -1,10 +1,14 @@
 package app.careerflow.rs.company.controller;
 
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import app.careerflow.rs.company.dto.CompanyDTO;
 import app.careerflow.rs.company.service.CompanyService;
+import app.careerflow.rs.common.exception.ConflictException;
 
 @WebMvcTest(CompanyController.class)
 class CompanyControllerTest {
@@ -68,5 +73,43 @@ class CompanyControllerTest {
                 && "Testing company".equals(request.bio())
                 && "https://testing.com/".equals(request.websiteUrl())
         ));
+    }
+
+    @Test
+    void updateCompanyReturnsUpdatedCompany() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.updateCompany(eq(id), argThat(request -> "Updated".equals(request.companyName()))))
+            .thenReturn(new CompanyDTO(id, "Updated", "Madrid", "Bio", "https://example.com"));
+
+        mockMvc.perform(put("/api/companies/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"companyName":"Updated","companyAddress":"Madrid","bio":"Bio","websiteUrl":"https://example.com"}
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(id.toString()))
+            .andExpect(jsonPath("$.companyName").value("Updated"));
+    }
+
+    @Test
+    void deleteCompanyReturnsNoContent() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/companies/{id}", id))
+            .andExpect(status().isNoContent());
+
+        verify(service).deleteById(id);
+    }
+
+    @Test
+    void deleteReferencedCompanyReturnsConflict() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new ConflictException(
+            "Company cannot be deleted while applications or contacts reference it."
+        )).when(service).deleteById(id);
+
+        mockMvc.perform(delete("/api/companies/{id}", id))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.error.code").value("CONFLICT"));
     }
 }

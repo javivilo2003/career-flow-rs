@@ -124,4 +124,30 @@ public class FollowUpService {
             request.applicationId()
         );
     }
+
+    public FollowUpDTO updateFollowUpById(UUID id, FollowUpRequest request) throws ResourceNotFoundException{
+        FollowUp followUp = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        JobApplication application = jobApplicationRepository.findById(request.applicationId())
+            .orElseThrow(() -> new ResourceNotFoundException(request.applicationId() + " not found"));
+
+        followUp.setApplication(application);
+        followUp.setTitle(request.title());
+        followUp.setDueDate(request.dueDate());
+        followUp.setCompleted(request.completed());
+
+        repository.save(followUp);
+
+        FollowUpDTO dto = mapper.apply(followUp);
+
+        return dto;
+    }
+
+    public void deleteFollowUpById(UUID id) throws ResourceNotFoundException{
+        FollowUp followUp = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        repository.delete(followUp);
+    }
 }

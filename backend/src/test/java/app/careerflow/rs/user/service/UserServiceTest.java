@@ -3,6 +3,7 @@ package app.careerflow.rs.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -17,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
+import app.careerflow.rs.common.exception.ConflictException;
+import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 import app.careerflow.rs.user.domain.User;
 import app.careerflow.rs.user.dto.UserDTO;
 import app.careerflow.rs.user.dto.UserRequest;
@@ -28,6 +31,7 @@ class UserServiceTest {
 
     @Mock private UserRepository repository;
     @Mock private UserMapper mapper;
+    @Mock private JobApplicationRepository jobApplicationRepository;
     @InjectMocks private UserService service;
 
     @Test
@@ -61,5 +65,43 @@ class UserServiceTest {
         service.addNewUser(request);
 
         verify(repository).save(user);
+    }
+
+    @Test
+    void updateUserSavesChangesAndReturnsMappedUser() throws Exception {
+        UUID id = UUID.randomUUID();
+        User user = User.builder().id(id).username("old").build();
+        UserRequest request = new UserRequest("updated", LocalDate.of(1990, 1, 1), "cv.pdf");
+        UserDTO dto = new UserDTO(id, "updated", request.dob(), request.cv(), null);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(mapper.apply(user)).thenReturn(dto);
+
+        assertThat(service.updateUser(id, request)).isSameAs(dto);
+        verify(repository).save(user);
+    }
+
+    @Test
+    void deleteUserDeletesUnreferencedUser() throws Exception {
+        UUID id = UUID.randomUUID();
+        User user = User.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        service.deleteById(id);
+
+        verify(repository).delete(user);
+    }
+
+    @Test
+    void deleteUserRejectsUserReferencedByApplication() {
+        UUID id = UUID.randomUUID();
+        User user = User.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(jobApplicationRepository.existsByUserId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class)
+            .hasMessage("User cannot be deleted while applications reference it.");
+
+        verify(repository, never()).delete(user);
     }
 }

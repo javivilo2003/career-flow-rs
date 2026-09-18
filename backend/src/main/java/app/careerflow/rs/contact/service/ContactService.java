@@ -123,5 +123,27 @@ public class ContactService {
         repository.save(contact);
         log.info("Created contact id={} companyId={}", contact.getId(), request.companyId());
     }
+
+    public ContactDTO updateContact(UUID id, ContactRequest request) throws ResourceNotFoundException {
+        Company company = companyRepository.findById(request.companyId())
+            .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
+        Contact contact = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        contact.setCompany(company);
+        contact.setName(request.name());
+        contact.setPhone(request.phone());
+        contact.setEmail(request.email());
+        contact.setJobRole(request.jobRole());
+
+        repository.save(contact);
+        return mapper.apply(contact);
+    }
+
+    public void deleteById(UUID id) throws ResourceNotFoundException {
+        Contact contact = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+        repository.delete(contact);
+    }
     
 }

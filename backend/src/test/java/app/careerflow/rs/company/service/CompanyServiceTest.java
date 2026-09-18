@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -19,17 +20,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
 import app.careerflow.rs.common.exception.InvalidRequestException;
+import app.careerflow.rs.common.exception.ConflictException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
 import app.careerflow.rs.company.dto.CompanyRequest;
 import app.careerflow.rs.company.mapper.CompanyMapper;
 import app.careerflow.rs.company.repository.CompanyRepository;
+import app.careerflow.rs.contact.repository.ContactRepository;
+import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class CompanyServiceTest {
 
     @Mock 
     private CompanyRepository repository;
+
+    @Mock
+    private JobApplicationRepository jobApplicationRepository;
+
+    @Mock
+    private ContactRepository contactRepository;
 
     @Mock 
     private CompanyMapper mapper;
@@ -103,5 +113,56 @@ public class CompanyServiceTest {
                 && "Testing company".equals(company.getBio())
                 && "https://testing.com/".equals(company.getWebsiteUrl())
         ));
+    }
+
+    @Test
+    void updateCompanySavesChanges() throws Exception {
+        UUID id = UUID.randomUUID();
+        Company company = Company.builder().id(id).companyName("Old").build();
+        CompanyRequest request = new CompanyRequest("Updated", "Madrid", "Bio", "https://example.com");
+        when(repository.findById(id)).thenReturn(Optional.of(company));
+
+        var result = service.updateCompany(id, request);
+
+        assertThat(result.companyName()).isEqualTo("Updated");
+        verify(repository).save(company);
+    }
+
+    @Test
+    void deleteCompanyDeletesUnreferencedCompany() throws Exception {
+        UUID id = UUID.randomUUID();
+        Company company = Company.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(company));
+
+        service.deleteById(id);
+
+        verify(repository).delete(company);
+    }
+
+    @Test
+    void deleteCompanyRejectsReferencedCompany() {
+        UUID id = UUID.randomUUID();
+        Company company = Company.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(company));
+        when(jobApplicationRepository.existsByCompanyId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class)
+            .hasMessage("Company cannot be deleted while applications or contacts reference it.");
+
+        verify(repository, never()).delete(company);
+    }
+
+    @Test
+    void deleteCompanyRejectsCompanyReferencedByContact() {
+        UUID id = UUID.randomUUID();
+        Company company = Company.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(company));
+        when(contactRepository.existsByCompanyId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class);
+
+        verify(repository, never()).delete(company);
     }
 }

@@ -169,7 +169,7 @@ public class JobApplicationServiceTest {
         JobApplication application = JobApplication.builder().id(id).build();
         when(repository.findById(id)).thenReturn(Optional.of(application));
 
-        service.deleteById(id);
+        service.deleteApplicationById(id);
 
         verify(repository).delete(application);
     }
@@ -181,7 +181,7 @@ public class JobApplicationServiceTest {
         when(repository.findById(id)).thenReturn(Optional.of(application));
         when(interviewRepository.existsByJobApplicationId(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteById(id))
+        assertThatThrownBy(() -> service.deleteApplicationById(id))
             .isInstanceOf(ConflictException.class)
             .hasMessage("Application cannot be deleted while interviews, notes, or followups reference it.");
 
@@ -195,7 +195,7 @@ public class JobApplicationServiceTest {
         when(repository.findById(id)).thenReturn(Optional.of(application));
         when(noteRepository.existsByApplicationId(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteById(id))
+        assertThatThrownBy(() -> service.deleteApplicationById(id))
             .isInstanceOf(ConflictException.class);
 
         verify(repository, never()).delete(application);
@@ -208,7 +208,7 @@ public class JobApplicationServiceTest {
         when(repository.findById(id)).thenReturn(Optional.of(application));
         when(followUpRepository.existsByApplicationId(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteById(id))
+        assertThatThrownBy(() -> service.deleteApplicationById(id))
             .isInstanceOf(ConflictException.class);
 
         verify(repository, never()).delete(application);

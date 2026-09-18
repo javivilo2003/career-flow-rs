@@ -81,7 +81,7 @@ class JobApplicationControllerTest {
         mockMvc.perform(delete("/api/applications/{id}", id))
             .andExpect(status().isNoContent());
 
-        verify(service).deleteById(id);
+        verify(service).deleteApplicationById(id);
     }
 
     @Test
@@ -89,7 +89,7 @@ class JobApplicationControllerTest {
         UUID id = UUID.randomUUID();
         doThrow(new ConflictException(
             "Application cannot be deleted while interviews, notes, or followups reference it."
-        )).when(service).deleteById(id);
+        )).when(service).deleteApplicationById(id);
 
         mockMvc.perform(delete("/api/applications/{id}", id))
             .andExpect(status().isConflict())

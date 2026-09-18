@@ -133,4 +133,26 @@ public class InterviewService {
             request.status()
         );
     }
+
+    public InterviewDTO updateInterview(UUID id, InterviewRequest request) throws ResourceNotFoundException {
+        JobApplication application = jobApplicationRepository.findById(request.jobApplicationId())
+            .orElseThrow(() -> new ResourceNotFoundException(request.jobApplicationId() + " not found."));
+        Interview interview = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
+
+        interview.setJobApplication(application);
+        interview.setStage(request.stage());
+        interview.setStatus(request.status());
+        interview.setInterviewDate(request.interviewDate());
+        interview.setNotes(request.notes());
+
+        repository.save(interview);
+        return mapper.apply(interview);
+    }
+
+    public void deleteById(UUID id) throws ResourceNotFoundException {
+        Interview interview = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
+        repository.delete(interview);
+    }
 }

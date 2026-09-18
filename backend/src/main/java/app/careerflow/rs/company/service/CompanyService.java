@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import app.careerflow.rs.common.exception.ConflictException;
 import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
@@ -24,6 +25,8 @@ import app.careerflow.rs.company.dto.CompanyDTO;
 import app.careerflow.rs.company.dto.CompanyRequest;
 import app.careerflow.rs.company.mapper.CompanyMapper;
 import app.careerflow.rs.company.repository.CompanyRepository;
+import app.careerflow.rs.contact.repository.ContactRepository;
+import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 import jakarta.persistence.criteria.Predicate;
 
 @Service
@@ -31,6 +34,8 @@ public class CompanyService {
 
     private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
     private final CompanyRepository repository;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final ContactRepository contactRepository;
     private CompanyMapper mapper = new CompanyMapper();
     private static final Map<String, String> SORT_FIELDS = Map.of(
         "id", "id",
@@ -41,8 +46,14 @@ public class CompanyService {
         "createdAt", "createdAt"
     );
 
-    public CompanyService(CompanyRepository repository) {
+    public CompanyService(
+        CompanyRepository repository,
+        JobApplicationRepository jobApplicationRepository,
+        ContactRepository contactRepository
+    ) {
         this.repository = repository;
+        this.jobApplicationRepository = jobApplicationRepository;
+        this.contactRepository = contactRepository;
     }
 
     public Page<CompanyDTO> getCompanies(CompanyFilter filter, int page, int size, String sortField, Direction direction){
@@ -157,5 +168,31 @@ public class CompanyService {
         Company company = mapper.toEntityCompany(request);
         repository.save(company);
         log.info("Created company id={}", company.getId());
+    }
+
+    public CompanyDTO updateCompany(UUID id, CompanyRequest request) throws ResourceNotFoundException {
+        Company company = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        company.setCompanyName(request.companyName());
+        company.setCompanyAddress(request.companyAddress());
+        company.setBio(request.bio());
+        company.setWebsiteUrl(request.websiteUrl());
+
+        repository.save(company);
+        return mapper.apply(company);
+    }
+
+    public void deleteById(UUID id) throws ResourceNotFoundException, ConflictException {
+        Company company = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        if (jobApplicationRepository.existsByCompanyId(id) || contactRepository.existsByCompanyId(id)) {
+            throw new ConflictException(
+                "Company cannot be deleted while applications or contacts reference it."
+            );
+        }
+
+        repository.delete(company);
     }
 }

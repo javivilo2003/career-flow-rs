@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import app.careerflow.rs.contact.domain.Contact;
 
 public interface ContactRepository extends JpaRepository<Contact, UUID>, JpaSpecificationExecutor<Contact>{
+    boolean existsByCompanyId(UUID companyId);
 }

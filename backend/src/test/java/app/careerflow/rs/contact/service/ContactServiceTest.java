@@ -20,6 +20,7 @@ import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
 import app.careerflow.rs.company.repository.CompanyRepository;
 import app.careerflow.rs.contact.domain.Contact;
+import app.careerflow.rs.contact.dto.ContactDTO;
 import app.careerflow.rs.contact.dto.ContactRequest;
 import app.careerflow.rs.contact.mapper.ContactMapper;
 import app.careerflow.rs.contact.repository.ContactRepository;
@@ -78,5 +79,34 @@ class ContactServiceTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage(companyId + " not found.");
         verifyNoInteractions(mapper, repository);
+    }
+
+    @Test
+    void updateContactResolvesCompanyAndSavesChanges() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
+        Company company = Company.builder().id(companyId).build();
+        Contact contact = Contact.builder().id(id).build();
+        ContactRequest request = new ContactRequest(companyId, "Ada", "123", "ada@example.com", "CTO");
+        ContactDTO dto = new ContactDTO(id, companyId, "Ada", "123", "ada@example.com", "CTO");
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(repository.findById(id)).thenReturn(Optional.of(contact));
+        when(mapper.apply(contact)).thenReturn(dto);
+
+        service.updateContact(id, request);
+
+        verify(repository).save(contact);
+        verify(mapper).apply(contact);
+    }
+
+    @Test
+    void deleteContactDeletesExistingContact() throws Exception {
+        UUID id = UUID.randomUUID();
+        Contact contact = Contact.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(contact));
+
+        service.deleteById(id);
+
+        verify(repository).delete(contact);
     }
 }

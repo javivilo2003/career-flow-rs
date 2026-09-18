@@ -284,7 +284,7 @@ public class JobApplicationService {
         return dto;
     }
 
-    public void deleteById(UUID id) throws ResourceNotFoundException, ConflictException{
+    public void deleteApplicationById(UUID id) throws ResourceNotFoundException, ConflictException{
         JobApplication application = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
 
         boolean isReferenced = interviewRepository.existsByJobApplicationId(id)

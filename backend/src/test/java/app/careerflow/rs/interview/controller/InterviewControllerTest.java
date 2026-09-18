@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -109,5 +111,36 @@ class InterviewControllerTest {
             .andExpect(jsonPath("$.error.details[*].field", hasItem("status")));
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void updateInterviewReturnsUpdatedInterview() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        when(service.updateInterview(eq(id), argThat(request ->
+            applicationId.equals(request.jobApplicationId())
+        ))).thenReturn(new InterviewDTO(
+            id, applicationId, "Technical", InterviewStatus.RESCHEDULED,
+            LocalDate.of(2026, 10, 3), "Review API design"
+        ));
+
+        mockMvc.perform(put("/api/interviews/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"jobApplicationId":"%s","stage":"Technical","status":"RESCHEDULED","interviewDate":"2026-10-03","notes":"Review API design"}
+                    """.formatted(applicationId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(id.toString()))
+            .andExpect(jsonPath("$.status").value("RESCHEDULED"));
+    }
+
+    @Test
+    void deleteInterviewReturnsNoContent() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/interviews/{id}", id))
+            .andExpect(status().isNoContent());
+
+        verify(service).deleteById(id);
     }
 }

@@ -72,7 +72,7 @@ public class JobApplicationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("{id}")
     public void deleteApplicationById(@PathVariable UUID id) throws ResourceNotFoundException, ConflictException{
-        service.deleteById(id);
+        service.deleteApplicationById(id);
     }
 
 }
