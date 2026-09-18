@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import app.careerflow.rs.followup.domain.FollowUp;
 
 public interface FollowUpRepository extends JpaRepository<FollowUp, UUID>, JpaSpecificationExecutor<FollowUp>{
+    boolean existsByApplicationId(UUID applicationId);
 }

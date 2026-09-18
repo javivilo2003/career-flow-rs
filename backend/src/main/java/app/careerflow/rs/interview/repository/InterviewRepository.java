@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import app.careerflow.rs.interview.domain.Interview;
 
 public interface InterviewRepository extends JpaRepository<Interview, UUID>, JpaSpecificationExecutor<Interview>{
+    boolean existsByJobApplicationId(UUID jobApplicationId);
 }

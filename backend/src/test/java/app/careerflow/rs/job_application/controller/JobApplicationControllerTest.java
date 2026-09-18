@@ -1,8 +1,10 @@
 package app.careerflow.rs.job_application.controller;
 
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import app.careerflow.rs.common.exception.ConflictException;
 import app.careerflow.rs.job_application.domain.ApplicationStatus;
 import app.careerflow.rs.job_application.dto.JobApplicationDTO;
 import app.careerflow.rs.job_application.service.JobApplicationService;
@@ -62,12 +65,37 @@ class JobApplicationControllerTest {
                       "source":"LinkedIn"
                     }
                     """.formatted(userId, companyId)))
-            .andExpect(status().isOk());
+            .andExpect(status().isCreated());
 
         verify(service).addNewJobApplication(argThat(request ->
             userId.equals(request.userId())
                 && companyId.equals(request.companyId())
                 && request.status() == ApplicationStatus.APPLIED
         ));
+    }
+
+    @Test
+    void deleteApplicationReturnsNoContent() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/applications/{id}", id))
+            .andExpect(status().isNoContent());
+
+        verify(service).deleteById(id);
+    }
+
+    @Test
+    void deleteReferencedApplicationReturnsConflict() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new ConflictException(
+            "Application cannot be deleted while interviews, notes, or followups reference it."
+        )).when(service).deleteById(id);
+
+        mockMvc.perform(delete("/api/applications/{id}", id))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.error.code").value("CONFLICT"))
+            .andExpect(jsonPath("$.error.message").value(
+                "Application cannot be deleted while interviews, notes, or followups reference it."
+            ));
     }
 }

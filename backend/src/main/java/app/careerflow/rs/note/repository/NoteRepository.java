@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import app.careerflow.rs.note.domain.Note;
 
 public interface NoteRepository extends JpaRepository<Note, UUID>, JpaSpecificationExecutor<Note>{
+    boolean existsByApplicationId(UUID applicationId);
 }

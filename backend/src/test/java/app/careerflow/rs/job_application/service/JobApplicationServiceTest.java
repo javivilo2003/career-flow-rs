@@ -1,6 +1,7 @@
 package app.careerflow.rs.job_application.service;
 
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -18,15 +19,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
 import app.careerflow.rs.common.exception.InvalidRequestException;
+import app.careerflow.rs.common.exception.ConflictException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
 import app.careerflow.rs.company.repository.CompanyRepository;
+import app.careerflow.rs.followup.repository.FollowUpRepository;
+import app.careerflow.rs.interview.repository.InterviewRepository;
 import app.careerflow.rs.job_application.domain.ApplicationStatus;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.dto.JobApplicationDTO;
 import app.careerflow.rs.job_application.dto.JobApplicationRequest;
 import app.careerflow.rs.job_application.mapper.JobApplicationMapper;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
+import app.careerflow.rs.note.repository.NoteRepository;
 import app.careerflow.rs.user.domain.User;
 import app.careerflow.rs.user.repository.UserRepository;
 
@@ -44,6 +49,15 @@ public class JobApplicationServiceTest {
 
     @Mock 
     private UserRepository userRepository;
+
+    @Mock
+    private InterviewRepository interviewRepository;
+
+    @Mock
+    private NoteRepository noteRepository;
+
+    @Mock
+    private FollowUpRepository followUpRepository;
 
     @InjectMocks 
     private JobApplicationService service;
@@ -147,6 +161,57 @@ public class JobApplicationServiceTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage(userId + " not found.");
         verifyNoInteractions(mapper, repository);
+    }
+
+    @Test
+    void deleteApplicationDeletesUnreferencedApplication() throws Exception {
+        UUID id = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(application));
+
+        service.deleteById(id);
+
+        verify(repository).delete(application);
+    }
+
+    @Test
+    void deleteApplicationRejectsReferencedApplication() {
+        UUID id = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(application));
+        when(interviewRepository.existsByJobApplicationId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class)
+            .hasMessage("Application cannot be deleted while interviews, notes, or followups reference it.");
+
+        verify(repository, never()).delete(application);
+    }
+
+    @Test
+    void deleteApplicationRejectsApplicationReferencedByNote() {
+        UUID id = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(application));
+        when(noteRepository.existsByApplicationId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class);
+
+        verify(repository, never()).delete(application);
+    }
+
+    @Test
+    void deleteApplicationRejectsApplicationReferencedByFollowUp() {
+        UUID id = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(id).build();
+        when(repository.findById(id)).thenReturn(Optional.of(application));
+        when(followUpRepository.existsByApplicationId(id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(id))
+            .isInstanceOf(ConflictException.class);
+
+        verify(repository, never()).delete(application);
     }
 
     private JobApplicationRequest request(UUID userId, UUID companyId) {
