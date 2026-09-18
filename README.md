@@ -1,6 +1,10 @@
-# CareerFlow API
+# CareerFlow
 
-CareerFlow API is a Spring Boot backend for tracking a job search. It stores users, companies, job applications, contacts, interviews, notes, and follow-up tasks so an application pipeline can be managed from one place.
+CareerFlow is a job-search tracking application organized as a monorepo. The
+Spring Boot API lives in `backend/`, leaving the repository ready for a separate
+frontend application. The API stores users, companies, job applications,
+contacts, interviews, notes, and follow-up tasks so an application pipeline can
+be managed from one place.
 
 ## Features
 
@@ -31,11 +35,11 @@ CareerFlow API is a Spring Boot backend for tracking a job search. It stores use
 
 ## Getting Started
 
-Clone the repository and move into the project directory:
+Clone the repository and move into the backend directory:
 
 ```bash
 git clone <repository-url>
-cd CareerFlow
+cd CareerFlow/backend
 ```
 
 Create a local PostgreSQL role and database. For example:
@@ -51,23 +55,24 @@ For example, run those statements as a PostgreSQL administrator with `psql`:
 psql -U postgres
 ```
 
-Configure the application through environment variables. Datasource credentials
-are not stored in `application.properties`.
+Create `.env` in the backend directory (`CareerFlow/backend/.env`) and add the
+datasource settings below. The backend imports this file automatically through
+`application.properties`, so no shell `export` or `source` commands are
+required. Deployed environment variables take precedence over values from the
+file.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `SPRING_PROFILES_ACTIVE` | Yes | Use `local` for the current container configuration. |
 | `DB_URL` | Yes | PostgreSQL JDBC URL. |
 | `DB_USERNAME` | Yes | PostgreSQL username. |
 | `DB_PASSWORD` | Yes | PostgreSQL password. |
 
 For example:
 
-```bash
-export SPRING_PROFILES_ACTIVE=local
-export DB_URL=jdbc:postgresql://localhost:5432/db
-export DB_USERNAME=db
-export DB_PASSWORD=password
+```dotenv
+DB_URL=jdbc:postgresql://localhost:5432/db
+DB_USERNAME=db
+DB_PASSWORD=password
 ```
 
 The database name and credentials must match the PostgreSQL role and database
@@ -86,13 +91,16 @@ The API runs on:
 http://localhost:8080
 ```
 
-Flyway runs automatically on startup and applies migrations from:
+Flyway runs automatically on startup and applies migrations from this
+repository-relative path:
 
 ```text
-src/main/resources/db/migration
+backend/src/main/resources/db/migration
 ```
 
 ## Useful Commands
+
+Run the following commands from the `backend/` directory.
 
 Run the test suite:
 
@@ -299,7 +307,25 @@ Common error codes include:
 ## Project Structure
 
 ```text
-src/main/java/app/careerflow/rs
+CareerFlow/
+|-- backend/
+|   |-- .mvn/              # Maven Wrapper configuration
+|   |-- .env               # Local backend variables (not committed)
+|   |-- Dockerfile
+|   |-- pom.xml
+|   `-- src/
+|       |-- main/
+|       |   |-- java/app/careerflow/rs/
+|       |   `-- resources/
+|       `-- test/
+|-- README.md
+`-- api-plan.md
+```
+
+The backend Java packages are organized by feature:
+
+```text
+backend/src/main/java/app/careerflow/rs/
 |-- common          # Shared errors and exception handling
 |-- company         # Company domain, repository, service, controller
 |-- contact         # Contact domain, repository, service, controller
@@ -332,5 +358,7 @@ the initial migration runs.
 
 - API IDs are UUIDs.
 - Dates use ISO format, for example `2026-08-20`.
+- Backend configuration is consolidated in `backend/src/main/resources/application.properties`.
+- Local datasource values are read automatically from `backend/.env`.
 - JPA schema generation is set to `validate`; schema changes should be made through Flyway migrations.
 - `api-plan.md` contains broader API planning notes beyond the endpoints currently implemented.
