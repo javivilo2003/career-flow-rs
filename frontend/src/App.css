@@ -182,3 +182,282 @@
     border-right-color: var(--border);
   }
 }
+
+.app-shell {
+  min-height: 100svh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-brand {
+  color: var(--text-h);
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.app-navigation {
+  display: flex;
+  gap: 8px;
+}
+
+.app-navigation a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app-navigation a:hover,
+.app-navigation a.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.page {
+  padding: 48px;
+  text-align: left;
+}
+
+.page__header {
+  margin-bottom: 32px;
+}
+
+.page__header h1 {
+  margin-bottom: 8px;
+}
+
+.page__eyebrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-panel {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.dashboard-panel:first-child {
+  grid-column: 1 / -1;
+}
+
+.dashboard-panel__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dashboard-panel__heading a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+}
+
+.summary-card__label {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.summary-card__value {
+  margin-top: 8px;
+  color: var(--text-h);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.interview-list {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.interview-card {
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--code-bg);
+}
+
+.interview-card__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.interview-card__heading h3 {
+  margin: 0 0 4px;
+  color: var(--text-h);
+  font-size: 17px;
+}
+
+.interview-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.interview-card__meta span,
+.interview-card__meta time {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.interview-card__notes {
+  margin-top: 12px;
+}
+
+.interviews-page-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.pagination button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-h);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.application-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.application-card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.application-card__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.application-card__heading span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.application-card__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.application-card__details dt {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.application-card__details dd {
+  margin: 4px 0 0;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    align-items: flex-start;
+    padding: 16px 20px;
+  }
+
+  .app-navigation {
+    flex-direction: column;
+  }
+
+  .page {
+    padding: 24px 20px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-panel:first-child {
+    grid-column: auto;
+  }
+
+  .dashboard-panel__heading {
+    flex-direction: column;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .interview-card__heading {
+    flex-direction: column;
+  }
+
+  .interview-card__meta {
+    align-items: flex-start;
+  }
+
+  .application-card__heading {
+    flex-direction: column;
+  }
+}
