@@ -47,6 +47,36 @@ export type Interview = {
   notes: string | null
 }
 
+export type Contact = {
+  id: string
+  companyId: string
+  name: string
+  phone: string
+  email: string
+  jobRole: string
+}
+
+export type FollowUp = {
+  id: string
+  jobApplicationId: string
+  title: string
+  dueDate: string | null
+  completed: boolean
+}
+
+export type Note = {
+  id: string
+  jobApplicationId: string
+  content: string
+}
+
+export type User = {
+  id: string
+  username: string
+  dob: string | null
+  cv: string
+}
+
 export type Page<T> = {
   content: T[]
   number: number
