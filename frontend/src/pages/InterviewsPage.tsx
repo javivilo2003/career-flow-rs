@@ -3,6 +3,7 @@ import {
   getInterviewDetails,
   getInterviews,
 } from '../api/interviews'
+import Button from '../components/Button'
 import InterviewCard from '../components/InterviewCard'
 import type { InterviewDetails } from '../api/interviews'
 import type { Interview, Page } from '../types/api'
@@ -59,24 +60,28 @@ function InterviewsPage() {
   }, [pageNumber])
 
   return (
-    <main className="page">
-      <header className="page__header">
-        <p className="page__eyebrow">Interviews</p>
-        <h1>Interviews</h1>
-        <p>Review scheduled interviews and your interview history.</p>
+    <main className="p-12 text-left">
+      <header className="mb-8">
+        <p className="m-0 text-accent font-bold">Interviews</p>
+        <h1 className="m-0 mt-8 mb-2 font-heading text-5xl font-medium tracking-normal text-heading">
+          Interviews
+        </h1>
+        <p className="m-0">
+          Review scheduled interviews and your interview history.
+        </p>
       </header>
 
-      {isLoading && <p>Loading interviews...</p>}
+      {isLoading && <p className="m-0">Loading interviews...</p>}
 
-      {!isLoading && error && <p role="alert">{error}</p>}
+      {!isLoading && error && <p role="alert" className="m-0">{error}</p>}
 
       {!isLoading && !error && interviews.length === 0 && (
-        <p>You do not have any interviews yet.</p>
+        <p className="m-0">You do not have any interviews yet.</p>
       )}
 
       {!isLoading && !error && interviews.length > 0 && (
         <>
-          <ul className="interviews-page-list">
+          <ul className="m-0 grid list-none gap-4 p-0">
             {interviews.map((item) => (
               <li key={item.interview.id}>
                 <InterviewCard
@@ -89,24 +94,29 @@ function InterviewsPage() {
           </ul>
 
           {interviewsPage && (
-            <nav className="pagination" aria-label="Interview pages">
-              <button
+            <nav
+              className="mt-6 flex items-center justify-center gap-4"
+              aria-label="Interview pages"
+            >
+              <Button
                 type="button"
                 disabled={interviewsPage.first}
+                figmaVariant="Variante3"
                 onClick={() => setPageNumber((current) => current - 1)}
               >
                 Previous
-              </button>
-              <span>
+              </Button>
+              <span className="text-body">
                 Page {interviewsPage.number + 1} of {interviewsPage.totalPages}
               </span>
-              <button
+              <Button
                 type="button"
                 disabled={interviewsPage.last}
+                figmaVariant="Variante3"
                 onClick={() => setPageNumber((current) => current + 1)}
               >
                 Next
-              </button>
+              </Button>
             </nav>
           )}
         </>

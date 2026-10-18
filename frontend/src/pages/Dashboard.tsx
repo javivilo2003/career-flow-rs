@@ -104,26 +104,37 @@ function Dashboard() {
   }, [])
 
   return (
-    <main className="page">
-      <header className="page__header">
-        <p className="page__eyebrow">Overview</p>
-        <h1>Dashboard</h1>
-        <p>The important parts of your job search, all in one place.</p>
+    <main className="p-12 text-left">
+      <header className="mb-8">
+        <p className="m-0 text-accent font-bold">Overview</p>
+        <h1 className="m-0 mt-8 mb-2 font-heading text-5xl font-medium tracking-normal text-heading">
+          Dashboard
+        </h1>
+        <p className="m-0">
+          The important parts of your job search, all in one place.
+        </p>
       </header>
 
-      <div className="dashboard-grid">
-        <section className="dashboard-panel">
-          <div className="dashboard-panel__heading">
-            <h2>Application summary</h2>
-            <Link to="/applications">View job applications</Link>
+      <div className="grid grid-auto-page gap-4">
+        <section className="col-span-full rounded-2xl bg-surface p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <h2 className="m-0 mb-2 font-heading text-2xl font-medium leading-tight tracking-normal text-heading">
+              Application summary
+            </h2>
+            <Link
+              to="/applications"
+              className="text-accent font-bold"
+            >
+              View job applications
+            </Link>
           </div>
 
-          {isLoading && <p>Loading application summary...</p>}
+          {isLoading && <p className="m-0">Loading application summary...</p>}
 
-          {!isLoading && error && <p role="alert">{error}</p>}
+          {!isLoading && error && <p role="alert" className="m-0">{error}</p>}
 
           {!isLoading && !error && summary && (
-            <div className="summary-grid">
+            <div className="grid grid-auto-summary gap-4">
               <SummaryCard label="Total applications" value={summary.total} />
               <SummaryCard
                 label="Interviewing"
@@ -134,28 +145,39 @@ function Dashboard() {
           )}
         </section>
 
-        <section className="dashboard-panel">
-          <div className="dashboard-panel__heading">
-            <h2>Upcoming interviews</h2>
-            <Link to="/interviews">View all interviews</Link>
+        <section className="rounded-2xl bg-surface p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <h2 className="m-0 mb-2 font-heading text-2xl font-medium leading-tight tracking-normal text-heading">
+              Upcoming interviews
+            </h2>
+            <Link
+              to="/interviews"
+              className="text-accent font-bold"
+            >
+              View all interviews
+            </Link>
           </div>
 
-          {areInterviewsLoading && <p>Loading upcoming interviews...</p>}
+          {areInterviewsLoading && (
+            <p className="m-0">Loading upcoming interviews...</p>
+          )}
 
           {!areInterviewsLoading && interviewsError && (
-            <p role="alert">{interviewsError}</p>
+            <p role="alert" className="m-0">
+              {interviewsError}
+            </p>
           )}
 
           {!areInterviewsLoading &&
             !interviewsError &&
             upcomingInterviews.length === 0 && (
-              <p>You do not have any upcoming interviews.</p>
+              <p className="m-0">You do not have any upcoming interviews.</p>
             )}
 
           {!areInterviewsLoading &&
             !interviewsError &&
             upcomingInterviews.length > 0 && (
-              <ul className="interview-list">
+              <ul className="m-0 mt-5 grid list-none gap-3 p-0">
                 {upcomingInterviews.map((item) => (
                   <li key={item.interview.id}>
                     <InterviewCard
@@ -169,9 +191,13 @@ function Dashboard() {
             )}
         </section>
 
-        <section className="dashboard-panel">
-          <h2>Follow-ups</h2>
-          <p>Your pending and overdue follow-ups will appear here.</p>
+        <section className="rounded-2xl bg-surface p-6">
+          <h2 className="m-0 mb-2 font-heading text-2xl font-medium leading-tight tracking-normal text-heading">
+            Follow-ups
+          </h2>
+          <p className="m-0">
+            Your pending and overdue follow-ups will appear here.
+          </p>
         </section>
       </div>
     </main>
