@@ -58,9 +58,7 @@ export async function getApplication(id: string): Promise<JobApplication> {
   return response.json() as Promise<JobApplication>
 }
 
-export async function createApplication(
-  application: JobApplicationRequest,
-): Promise<void> {
+export async function createApplication(application: JobApplicationRequest): Promise<void> {
   const response = await fetch('/api/applications', {
     method: 'POST',
     headers: {

@@ -1,13 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+
 import ApplicationsPage from './pages/ApplicationsPage'
 import Dashboard from './pages/Dashboard'
 import InterviewsPage from './pages/InterviewsPage'
+import UiKitPage from './pages/UiKitPage'
 
 function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-page text-center">
         <Routes>
+          <Route path="/ui-kit" element={<UiKitPage />} />
           <Route path="/" element={<ApplicationsPage />} />
           <Route path="/applications" element={<ApplicationsPage />} />
           <Route path="/dashboard" element={<Dashboard />} />

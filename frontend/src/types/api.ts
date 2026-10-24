@@ -1,20 +1,8 @@
 export type ApplicationStatus =
-  | 'SAVED'
-  | 'PREPARING'
-  | 'APPLIED'
-  | 'INTERVIEWING'
-  | 'OFFER'
-  | 'REJECTED'
-  | 'WITHDRAWN'
+  'SAVED' | 'PREPARING' | 'APPLIED' | 'INTERVIEWING' | 'OFFER' | 'REJECTED' | 'WITHDRAWN'
 
 export type InterviewStatus =
-  | 'SCHEDULED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'RESCHEDULED'
-  | 'PASSED'
-  | 'FAILED'
-  | 'WAITING_FEEDBACK'
+  'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED' | 'PASSED' | 'FAILED' | 'WAITING_FEEDBACK'
 
 export type JobApplication = {
   id: string
@@ -91,12 +79,7 @@ export type Page<T> = {
 
 export type ApiErrorResponse = {
   error: {
-    code:
-      | 'INVALID_REQUEST'
-      | 'VALIDATION_ERROR'
-      | 'NOT_FOUND'
-      | 'CONFLICT'
-      | 'INTERNAL_ERROR'
+    code: 'INVALID_REQUEST' | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_ERROR'
     message: string
     details?: Array<{
       field: string

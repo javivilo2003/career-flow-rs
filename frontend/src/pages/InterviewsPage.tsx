@@ -1,18 +1,14 @@
 import { useEffect, useState } from 'react'
-import {
-  getInterviewDetails,
-  getInterviews,
-} from '../api/interviews'
+
+import type { InterviewDetails } from '../api/interviews'
+import { getInterviewDetails, getInterviews } from '../api/interviews'
 import Button from '../components/Button'
 import InterviewCard from '../components/InterviewCard'
-import type { InterviewDetails } from '../api/interviews'
 import type { Interview, Page } from '../types/api'
 
 function InterviewsPage() {
   const [interviews, setInterviews] = useState<InterviewDetails[]>([])
-  const [interviewsPage, setInterviewsPage] = useState<Page<Interview> | null>(
-    null,
-  )
+  const [interviewsPage, setInterviewsPage] = useState<Page<Interview> | null>(null)
   const [pageNumber, setPageNumber] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,9 +35,7 @@ function InterviewsPage() {
       } catch (requestError) {
         if (!isCancelled) {
           const message =
-            requestError instanceof Error
-              ? requestError.message
-              : 'Could not load interviews.'
+            requestError instanceof Error ? requestError.message : 'Could not load interviews.'
 
           setError(message)
         }
@@ -59,27 +53,31 @@ function InterviewsPage() {
     }
   }, [pageNumber])
 
+  const isReady = !isLoading && !error
+
   return (
     <main className="p-12 text-left">
       <header className="mb-8">
-        <p className="m-0 text-accent font-bold">Interviews</p>
+        <p className="m-0 font-bold text-accent">Interviews</p>
         <h1 className="m-0 mt-8 mb-2 font-heading text-5xl font-medium tracking-normal text-heading">
           Interviews
         </h1>
-        <p className="m-0">
-          Review scheduled interviews and your interview history.
-        </p>
+        <p className="m-0">Review scheduled interviews and your interview history.</p>
       </header>
 
       {isLoading && <p className="m-0">Loading interviews...</p>}
 
-      {!isLoading && error && <p role="alert" className="m-0">{error}</p>}
+      {!isLoading && error && (
+        <p role="alert" className="m-0">
+          {error}
+        </p>
+      )}
 
-      {!isLoading && !error && interviews.length === 0 && (
+      {isReady && interviews.length === 0 && (
         <p className="m-0">You do not have any interviews yet.</p>
       )}
 
-      {!isLoading && !error && interviews.length > 0 && (
+      {isReady && interviews.length > 0 && (
         <>
           <ul className="m-0 grid list-none gap-4 p-0">
             {interviews.map((item) => (

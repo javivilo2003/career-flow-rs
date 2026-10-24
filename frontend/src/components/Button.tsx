@@ -1,45 +1,30 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes } from 'react'
 
-type FigmaButtonVariant =
-  | 'Variante2'
-  | 'Variante3'
-  | 'Variante4'
-  | 'Variante5'
-  | 'Variante6'
-
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  figmaVariant?: FigmaButtonVariant
-  children: ReactNode
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'destructive'
+  /** Compatibility for existing screens; new code should use variant. */
+  figmaVariant?: 'Variante2' | 'Variante3' | 'Variante4' | 'Variante5' | 'Variante6'
 }
-
-const variantClasses: Record<FigmaButtonVariant, string> = {
-  Variante2: 'bg-accent text-page',
-  Variante3: 'bg-surface text-body',
-  Variante4: 'bg-accent-muted text-surface',
-  Variante5: 'bg-transparent text-page underline',
-  Variante6: 'bg-transparent text-accent underline',
+const variants = {
+  primary: 'border-page bg-page text-heading',
+  secondary: 'border-body bg-surface text-heading',
+  destructive: 'border-danger bg-danger-surface text-danger',
 }
-
-function Button({
-  children,
-  className = '',
+export default function Button({
+  variant,
+  figmaVariant,
   disabled,
-  figmaVariant = 'Variante2',
+  className = '',
   type = 'button',
   ...props
 }: ButtonProps) {
+  const style = variant ?? (figmaVariant && figmaVariant !== 'Variante2' ? 'secondary' : 'primary')
   return (
     <button
-      className={`inline-flex h-[35px] w-[100px] items-center justify-center rounded-[10px] border-0 text-center text-[12px] font-bold leading-normal ${
-        variantClasses[figmaVariant]
-      } ${disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'} ${className}`}
-      disabled={disabled}
       type={type}
+      disabled={disabled}
+      className={`inline-flex h-12 shrink-0 items-center justify-center rounded-[10px] border px-5 text-center text-sm leading-normal font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-heading ${disabled ? 'cursor-not-allowed border-border bg-surface text-disabled' : `cursor-pointer ${variants[style]}`} ${className}`}
       {...props}
-    >
-      {children}
-    </button>
+    />
   )
 }
-
-export default Button

@@ -1,11 +1,6 @@
+import type { Interview, InterviewStatus, JobApplication, Page } from '../types/api'
 import { getApplication } from './applications'
 import { getCompany } from './companies'
-import type {
-  Interview,
-  InterviewStatus,
-  JobApplication,
-  Page,
-} from '../types/api'
 
 type GetInterviewsParams = {
   page?: number
@@ -77,9 +72,7 @@ export function getUpcomingInterviews(): Promise<Page<Interview>> {
   })
 }
 
-export async function getInterviewDetails(
-  interviews: Interview[],
-): Promise<InterviewDetails[]> {
+export async function getInterviewDetails(interviews: Interview[]): Promise<InterviewDetails[]> {
   return Promise.all(
     interviews.map(async (interview) => {
       const application = await getApplication(interview.jobApplicationId)
