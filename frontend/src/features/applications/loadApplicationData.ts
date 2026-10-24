@@ -1,6 +1,6 @@
-import { getApplications } from '../../api/applications'
-import { getCompanies } from '../../api/companies'
-import { getUsers } from '../../api/users'
+import { getApplications } from '../../apis/applications'
+import { getCompanies } from '../../apis/companies'
+import { getUsers } from '../../apis/users'
 import type { Company, JobApplication, User } from '../../types/api'
 
 export type LoadedApplicationData = {

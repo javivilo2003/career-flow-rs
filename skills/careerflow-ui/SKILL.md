@@ -17,7 +17,7 @@ Use the [CareerFlow Figma file](https://www.figma.com/design/UfLyaQqXPdEpkWeRdCU
 - Use semantic tokens: page `#222831`, surface `#393e46`, heading `#dfd0b8`, body `#948979`, secondary `#b8ac99`, border `#50535a`, disabled `#777675`, neutral badge `#494b4d`, success background `#414c46`, success text `#bdd0b5`, danger background `#543f40`, danger text `#e1a59c`.
 - Primary actions are charcoal with beige text. Secondary actions have slate fill and taupe border. Reserve muted red for destructive actions and errors. Disabled styling uses explicit tokens, not opacity.
 - Surface corners are 24px; control corners 10px; controls/buttons are 48px tall. Preserve measured exceptions: field gaps 9px, card gaps 22px, badge gaps 7px. Do not round them to a generic spacing scale. Figma strokes sit inside layout bounds: bordered card details use 15px top padding plus a 1px border; modal footers use 23px plus a 1px border to preserve the 16px/24px visual offsets.
-- Use the exported SVGs in `frontend/public/ui` at their intrinsic sizes. Do not substitute icon libraries, redraw icons, recolor them, or retain temporary Figma URLs. Company initials are text; actual company imagery must come from caller data.
+- Use `@hugeicons/core-free-icons` through the shared `Icon` wrapper for interface icons, preserving the sizes and semantic colors defined by the UI kit. Do not add component-level SVG assets or retain temporary Figma URLs. Company initials are text; actual company imagery must come from caller data.
 
 ## Component map
 

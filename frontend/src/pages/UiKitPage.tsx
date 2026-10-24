@@ -18,6 +18,12 @@ import {
 
 const statuses: BadgeStatus[] = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected']
 const options = statuses.map((value) => ({ value, label: value }))
+const companyOptions = [
+  { value: 'notion', label: 'Notion' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'figma', label: 'Figma' },
+  { value: 'stripe', label: 'Stripe' },
+]
 const jobs: Omit<JobCardProps, 'onAction' | 'onEdit' | 'onDelete'>[] = [
   {
     status: 'Saved',
@@ -54,7 +60,11 @@ const jobs: Omit<JobCardProps, 'onAction' | 'onEdit' | 'onDelete'>[] = [
 ]
 const initialValues = {
   role: 'Product Designer',
-  company: 'Notion',
+  companyId: 'notion',
+  jobType: 'Full-time',
+  source: 'Company site',
+  salary: 120000,
+  appliedAt: '2026-10-18',
   url: 'https://notion.so/careers/product-designer',
 }
 const deletion = {
@@ -303,6 +313,7 @@ function ModalsFamily({
         <Specimen name="ADD APPLICATION">
           <AddApplicationForm
             initialValues={initialValues}
+            companyOptions={companyOptions}
             onClose={() => onNotice('Cancelled preview form.')}
             onSubmit={() => onNotice('Preview saved. No application data was sent.')}
           />
@@ -374,6 +385,7 @@ export default function UiKitPage() {
       <AddApplicationModal
         open={addOpen}
         initialValues={initialValues}
+        companyOptions={companyOptions}
         onClose={() => setAddOpen(false)}
         onSubmit={() => {
           setNotice('Preview saved. No application data was sent.')

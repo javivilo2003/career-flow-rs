@@ -1,4 +1,4 @@
-import { Add01Icon } from '@hugeicons/core-free-icons'
+import Add01Icon from '@hugeicons/core-free-icons/Add01Icon'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { ReactNode } from 'react'
 

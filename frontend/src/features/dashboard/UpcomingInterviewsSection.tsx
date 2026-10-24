@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import type { InterviewDetails } from '../../api/interviews'
-import { getInterviewDetails, getUpcomingInterviews } from '../../api/interviews'
+import type { InterviewDetails } from '../../apis/interviews'
+import { getInterviewDetails, getUpcomingInterviews } from '../../apis/interviews'
 import InterviewCard from '../../components/InterviewCard'
 
 export default function UpcomingInterviewsSection() {

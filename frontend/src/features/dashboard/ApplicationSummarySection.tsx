@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { getApplications } from '../../api/applications'
+import { getApplications } from '../../apis/applications'
 import SummaryCard from '../../components/SummaryCard'
 
 type ApplicationSummary = {

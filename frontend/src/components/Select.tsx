@@ -1,5 +1,7 @@
 import { type FocusEvent, type KeyboardEvent, useId, useRef, useState } from 'react'
 
+import { fieldDescription } from './fieldDescription'
+import FieldMessage from './FieldMessage'
 import Icon from './Icon'
 
 export type SelectOption = { value: string; label: string }
@@ -16,6 +18,8 @@ export type SelectProps = {
   id?: string
   className?: string
   defaultOpen?: boolean
+  required?: boolean
+  error?: string
 }
 
 type SelectBehaviorOptions = Pick<
@@ -147,9 +151,18 @@ function useSelectBehavior({
   }
 }
 
-function triggerStateClasses(disabled: boolean, expanded: boolean, hasSelection: boolean) {
+function triggerStateClasses(
+  disabled: boolean,
+  expanded: boolean,
+  hasSelection: boolean,
+  error?: string,
+) {
   if (disabled) {
     return 'border-page text-disabled'
+  }
+
+  if (error) {
+    return 'border-danger text-heading'
   }
 
   if (expanded) {
@@ -259,6 +272,8 @@ export default function Select({
   id,
   className = '',
   defaultOpen = false,
+  required = false,
+  error,
 }: SelectProps) {
   const generatedId = useId()
   const fieldId = id ?? generatedId
@@ -283,7 +298,7 @@ export default function Select({
     trigger,
   } = behavior
   const activeDescendant = activeOptionId(fieldId, expanded, active)
-  const triggerClasses = triggerStateClasses(disabled, expanded, selected >= 0)
+  const triggerClasses = triggerStateClasses(disabled, expanded, selected >= 0, error)
 
   return (
     <div
@@ -308,6 +323,9 @@ export default function Select({
         aria-controls={`${fieldId}-options`}
         aria-labelledby={`${fieldId}-label`}
         aria-activedescendant={activeDescendant}
+        aria-required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={fieldDescription(fieldId, undefined, error)}
         disabled={disabled}
         onKeyDown={handleKey}
         onClick={toggleOpen}
@@ -327,6 +345,7 @@ export default function Select({
         options={options}
         setActive={setActive}
       />
+      <FieldMessage fieldId={fieldId} error={error} />
     </div>
   )
 }

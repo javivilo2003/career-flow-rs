@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import type { InterviewDetails } from '../api/interviews'
-import { getInterviewDetails, getInterviews } from '../api/interviews'
+import type { InterviewDetails } from '../apis/interviews'
+import { getInterviewDetails, getInterviews } from '../apis/interviews'
 import Button from '../components/Button'
 import InterviewCard from '../components/InterviewCard'
 import type { Interview, Page } from '../types/api'

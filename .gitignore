@@ -36,3 +36,8 @@ build/
 .env
 .env.*
 !.env.example
+
+
+### AI Skills and Related ###
+skills
+

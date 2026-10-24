@@ -1,4 +1,8 @@
-export type { AddApplicationModalProps, ApplicationDraft } from './AddApplicationModal'
+export type {
+  AddApplicationModalProps,
+  ApplicationDraft,
+  ApplicationDraftStatus,
+} from './AddApplicationModal'
 export { AddApplicationForm, default as AddApplicationModal } from './AddApplicationModal'
 export type { BadgeStatus } from './Badge'
 export { default as Badge } from './Badge'

@@ -10,6 +10,10 @@ export default function ApplicationsPage() {
   const { applications, companies, users, companyNames, isLoading, error, refresh } =
     useApplicationsData()
   const [isAddApplicationModalOpen, setIsAddApplicationModalOpen] = useState(false)
+  const companyOptions = companies.map((company) => ({
+    value: company.id,
+    label: company.companyName,
+  }))
 
   function openAddApplicationModal() {
     setIsAddApplicationModalOpen(true)
@@ -20,7 +24,7 @@ export default function ApplicationsPage() {
   }
 
   async function handleCreateApplication(draft: ApplicationDraft) {
-    await createApplicationFromDraft(draft, users[0]?.id, companies)
+    await createApplicationFromDraft(draft, users[0]?.id)
     await refresh()
     closeAddApplicationModal()
   }
@@ -28,6 +32,7 @@ export default function ApplicationsPage() {
   const addApplicationModal = (
     <AddApplicationModal
       open={isAddApplicationModalOpen}
+      companyOptions={companyOptions}
       onClose={closeAddApplicationModal}
       onSubmit={handleCreateApplication}
     />
