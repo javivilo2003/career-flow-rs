@@ -4,7 +4,7 @@ import java.util.List;
 
 import app.careerflow.rs.common.error.ApiErrorDetails;
 
-public class ConflictException extends Exception{
+public class ConflictException extends RuntimeException{
 
     private List<ApiErrorDetails> details;
 

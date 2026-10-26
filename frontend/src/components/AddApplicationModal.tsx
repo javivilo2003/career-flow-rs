@@ -1,5 +1,9 @@
-import { type FormEvent, type ReactNode, useId, useState } from 'react'
+import { type FormEvent, type ReactNode, useId, useMemo, useRef, useState } from 'react'
 
+import { type CompanyRequest, createCompany, getCompanies } from '../apis/companies'
+import ApplicationCompanyField from '../features/companies/ApplicationCompanyField'
+import type { SearchCompanies } from '../features/companies/useCompanySearch'
+import type { Company } from '../types/api'
 import Button from './Button'
 import Icon from './Icon'
 import Input from './Input'
@@ -29,7 +33,13 @@ export type AddApplicationFormProps = {
   error?: string
   titleId?: string
   children?: ReactNode
-  companyOptions: readonly SelectOption[]
+  /** Existing companies can seed the first render while a remote search is pending. */
+  companies?: readonly Company[]
+  /** Kept for callers that already provide select options. Prefer `companies`. */
+  companyOptions?: readonly SelectOption[]
+  onSearchCompanies?: SearchCompanies
+  onCreateCompany?: (request: CompanyRequest) => Promise<Company>
+  onCompanyCreated?: (company: Company) => void
 }
 const statuses: ApplicationDraftStatus[] = [
   'Saved',
@@ -40,6 +50,19 @@ const statuses: ApplicationDraftStatus[] = [
   'Rejected',
   'Withdrawn',
 ]
+const noCompanyOptions: readonly SelectOption[] = []
+
+function companySeeds(companies: readonly Company[] | undefined, options: readonly SelectOption[]) {
+  return companies
+    ? [...companies]
+    : options.map((option) => ({
+        id: option.value,
+        companyName: option.label,
+        companyAddress: null,
+        bio: null,
+        websiteUrl: null,
+      }))
+}
 
 type ApplicationErrors = Partial<Record<keyof ApplicationDraft, string>>
 
@@ -59,15 +82,8 @@ function validateRequiredFields(values: ApplicationDraft): ApplicationErrors {
     errors.role = 'Enter a role to continue.'
   }
   if (!values.companyId) {
-    errors.companyId = 'Choose an existing company to continue.'
+    errors.companyId = 'Select a company or create a new one to continue.'
   }
-  if (!values.jobType.trim()) {
-    errors.jobType = 'Enter a job type to continue.'
-  }
-  if (!values.source.trim()) {
-    errors.source = 'Enter a source to continue.'
-  }
-
   return errors
 }
 
@@ -106,8 +122,23 @@ function visibleErrors(showValidationErrors: boolean, errors: ApplicationErrors)
   return showValidationErrors ? errors : {}
 }
 
+function normalizedDraft(values: ApplicationDraft): ApplicationDraft {
+  return {
+    ...values,
+    role: values.role.trim(),
+    jobType: values.jobType.trim(),
+    source: values.source.trim() || 'Manual entry',
+    url: values.url.trim(),
+    notes: values.notes.trim(),
+  }
+}
+
 function applicationFormWidth(optionalDetailsOpen: boolean) {
   return optionalDetailsOpen ? 'w-[1120px]' : 'w-[680px]'
+}
+
+function applicationFormHeight(optionalDetailsOpen: boolean) {
+  return optionalDetailsOpen ? 'h-[704px]' : 'h-[656px]'
 }
 
 function detailsButtonLabel(optionalDetailsOpen: boolean) {
@@ -121,14 +152,14 @@ type ApplicationFieldsProps = {
 }
 
 type RequiredApplicationFieldsProps = ApplicationFieldsProps & {
-  companyOptions: readonly SelectOption[]
+  companyField: ReactNode
 }
 
 function RequiredApplicationFields({
   values,
   errors,
   update,
-  companyOptions,
+  companyField,
 }: RequiredApplicationFieldsProps) {
   return (
     <>
@@ -138,37 +169,22 @@ function RequiredApplicationFields({
           required
           value={values.role}
           onChange={(e) => update('role', e.target.value)}
+          placeholder="Ex: Backend Developer"
           error={errors.role}
+          wrapperClassName="min-h-[116px] sm:min-h-[99px]"
         />
-        <Select
-          label="Company *"
-          required
-          value={values.companyId}
-          onChange={(value) => update('companyId', value)}
-          options={companyOptions}
-          placeholder={companyOptions.length > 0 ? 'Choose a company' : 'No companies available'}
-          disabled={companyOptions.length === 0}
-          error={errors.companyId}
-        />
+        {companyField}
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Input
-          label="Job type *"
-          required
-          value={values.jobType}
-          onChange={(e) => update('jobType', e.target.value)}
-          placeholder="Full-time"
-          error={errors.jobType}
-        />
-        <Input
-          label="Source *"
-          required
-          value={values.source}
-          onChange={(e) => update('source', e.target.value)}
-          placeholder="LinkedIn, referral, company site…"
-          error={errors.source}
-        />
-      </div>
+      <Input
+        label="Job URL"
+        type="url"
+        value={values.url}
+        onChange={(e) => update('url', e.target.value)}
+        placeholder="https://company.com/jobs/…"
+        helperText="Optional · Paste the original listing to find it later."
+        error={errors.url}
+        wrapperClassName="min-h-[116px] sm:min-h-[99px]"
+      />
       <Select
         label="Status *"
         value={values.status}
@@ -184,6 +200,24 @@ function OptionalApplicationFields({ values, errors, update }: ApplicationFields
     <>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Input
+          label="Job type"
+          value={values.jobType}
+          onChange={(e) => update('jobType', e.target.value)}
+          placeholder="Ex: Full-time"
+          error={errors.jobType}
+          wrapperClassName="min-h-[99px]"
+        />
+        <Input
+          label="Source"
+          value={values.source}
+          onChange={(e) => update('source', e.target.value)}
+          placeholder="Ex: LinkedIn or referral"
+          error={errors.source}
+          wrapperClassName="min-h-[99px]"
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <Input
           label="Salary"
           type="number"
           min={0}
@@ -194,22 +228,16 @@ function OptionalApplicationFields({ values, errors, update }: ApplicationFields
           onChange={(e) => update('salary', e.target.value === '' ? null : e.target.valueAsNumber)}
           placeholder="Annual amount"
           error={errors.salary}
+          wrapperClassName="min-h-[116px]"
         />
         <Input
           label="Applied date"
           type="date"
           value={values.appliedAt}
           onChange={(e) => update('appliedAt', e.target.value)}
+          wrapperClassName="min-h-[116px]"
         />
       </div>
-      <Input
-        label="Job URL"
-        type="url"
-        value={values.url}
-        onChange={(e) => update('url', e.target.value)}
-        helperText="Paste the original listing so you can find it later."
-        error={errors.url}
-      />
       <Textarea
         label="Notes"
         value={values.notes}
@@ -217,6 +245,7 @@ function OptionalApplicationFields({ values, errors, update }: ApplicationFields
         placeholder="Add details about this opportunity…"
         helperText="Optional · Up to 1,000 characters"
         error={errors.notes}
+        wrapperClassName="min-h-[176px] sm:min-h-[159px]"
       />
     </>
   )
@@ -269,6 +298,30 @@ function FormFeedback({
   )
 }
 
+function ApplicationFormFooter({ pending, onClose }: { pending: boolean; onClose: () => void }) {
+  return (
+    <footer className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-border pt-[23px]">
+      <p className="m-0 text-xs text-body">* Required fields</p>
+      <div className="flex w-full gap-3 sm:w-auto">
+        <Button
+          variant="secondary"
+          className="min-w-0 flex-1 sm:w-[100px] sm:flex-none"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="min-w-0 flex-1 sm:w-[172px] sm:flex-none"
+          disabled={pending}
+        >
+          {pending ? 'Saving…' : 'Save application'}
+        </Button>
+      </div>
+    </footer>
+  )
+}
+
 export function AddApplicationForm({
   initialValues,
   onSubmit,
@@ -277,14 +330,18 @@ export function AddApplicationForm({
   error,
   titleId,
   children,
-  companyOptions,
+  companies: suppliedCompanies,
+  companyOptions = noCompanyOptions,
+  onSearchCompanies,
+  onCreateCompany,
+  onCompanyCreated,
 }: AddApplicationFormProps) {
   const generatedId = useId()
   const optionalDetailsId = `${generatedId}-optional-details`
   const [values, setValues] = useState<ApplicationDraft>({
     role: '',
     companyId: '',
-    jobType: 'Full-time',
+    jobType: '',
     source: 'Manual entry',
     salary: null,
     appliedAt: '',
@@ -294,18 +351,25 @@ export function AddApplicationForm({
     ...initialValues,
   })
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const [submitError, setSubmitError] = useState('')
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const [optionalDetailsOpen, setOptionalDetailsOpen] = useState(false)
+  const initialCompanies = useMemo<Company[]>(
+    () => companySeeds(suppliedCompanies, companyOptions),
+    [companyOptions, suppliedCompanies],
+  )
+  const initiallySelected = initialCompanies.find((company) => company.id === values.companyId)
   const pending = busy || submitting
   const validationErrors = validateDraft(values)
   const errors = visibleErrors(showValidationErrors, validationErrors)
   function update<K extends keyof ApplicationDraft>(key: K, value: ApplicationDraft[K]) {
     setValues((current) => ({ ...current, [key]: value }))
   }
+
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (pending) {
+    if (pending || submittingRef.current) {
       return
     }
     setShowValidationErrors(true)
@@ -315,20 +379,15 @@ export function AddApplicationForm({
       }
       return
     }
+    submittingRef.current = true
     setSubmitting(true)
     setSubmitError('')
     try {
-      await onSubmit({
-        ...values,
-        role: values.role.trim(),
-        jobType: values.jobType.trim(),
-        source: values.source.trim(),
-        url: values.url.trim(),
-        notes: values.notes.trim(),
-      })
+      await onSubmit(normalizedDraft(values))
     } catch (reason) {
       setSubmitError(reason instanceof Error ? reason.message : 'Could not save the application.')
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -338,7 +397,7 @@ export function AddApplicationForm({
       onSubmit={(event) => {
         void submit(event)
       }}
-      className={`flex h-[656px] max-h-[calc(100dvh-32px)] max-w-full flex-col gap-6 overflow-hidden rounded-[24px] bg-surface p-8 text-left leading-normal transition-[width] duration-200 motion-reduce:transition-none ${applicationFormWidth(optionalDetailsOpen)}`}
+      className={`flex max-h-[calc(100dvh-32px)] max-w-full flex-col gap-5 overflow-hidden rounded-[24px] bg-surface p-5 text-left leading-normal transition-[width,height] duration-200 motion-reduce:transition-none sm:gap-6 sm:p-8 ${applicationFormWidth(optionalDetailsOpen)} ${applicationFormHeight(optionalDetailsOpen)}`}
     >
       <header className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
@@ -358,7 +417,7 @@ export function AddApplicationForm({
           <Icon name="modal-x" />
         </button>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         <div
           className={`grid gap-6 ${optionalDetailsOpen ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : ''}`}
         >
@@ -370,7 +429,19 @@ export function AddApplicationForm({
               values={values}
               errors={errors}
               update={update}
-              companyOptions={companyOptions}
+              companyField={
+                <ApplicationCompanyField
+                  initialCompanies={initialCompanies}
+                  selectedCompanyId={values.companyId}
+                  selectedCompanyName={initiallySelected?.companyName}
+                  error={errors.companyId}
+                  disabled={pending}
+                  searchCompanies={onSearchCompanies}
+                  createCompany={onCreateCompany}
+                  onChange={(company) => update('companyId', company?.id ?? '')}
+                  onCompanyCreated={onCompanyCreated}
+                />
+              }
             />
             <button
               type="button"
@@ -394,34 +465,26 @@ export function AddApplicationForm({
           {children}
         </FormFeedback>
       </div>
-      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-border pt-[23px]">
-        <p className="m-0 text-xs text-body">* Required fields</p>
-        <div className="flex w-full gap-3 sm:w-auto">
-          <Button
-            variant="secondary"
-            className="min-w-0 flex-1 sm:w-[100px] sm:flex-none"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="min-w-0 flex-1 sm:w-[172px] sm:flex-none"
-            disabled={pending}
-          >
-            {pending ? 'Saving…' : 'Save application'}
-          </Button>
-        </div>
-      </footer>
+      <ApplicationFormFooter pending={pending} onClose={onClose} />
     </form>
   )
 }
 export type AddApplicationModalProps = AddApplicationFormProps & { open: boolean }
-export default function AddApplicationModal({ open, ...props }: AddApplicationModalProps) {
+export default function AddApplicationModal({
+  open,
+  onSearchCompanies = getCompanies,
+  onCreateCompany = createCompany,
+  ...props
+}: AddApplicationModalProps) {
   const titleId = useId()
   return (
     <Modal open={open} onClose={props.onClose} labelledBy={titleId} className="w-fit">
-      <AddApplicationForm {...props} titleId={titleId} />
+      <AddApplicationForm
+        {...props}
+        onSearchCompanies={onSearchCompanies}
+        onCreateCompany={onCreateCompany}
+        titleId={titleId}
+      />
     </Modal>
   )
 }

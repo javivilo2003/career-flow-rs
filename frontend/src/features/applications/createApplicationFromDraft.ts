@@ -1,6 +1,6 @@
 import { createApplication } from '../../apis/applications'
 import type { ApplicationDraft, ApplicationDraftStatus } from '../../components'
-import type { ApplicationStatus } from '../../types/api'
+import type { ApplicationStatus, JobApplication } from '../../types/api'
 
 const applicationStatusByDraft: Record<ApplicationDraftStatus, ApplicationStatus> = {
   Saved: 'SAVED',
@@ -12,25 +12,20 @@ const applicationStatusByDraft: Record<ApplicationDraftStatus, ApplicationStatus
   Withdrawn: 'WITHDRAWN',
 }
 
-export async function createApplicationFromDraft(
-  draft: ApplicationDraft,
-  userId: string | undefined,
-) {
-  if (!userId) {
-    throw new Error('Create a user before adding an application.')
-  }
+export async function createApplicationFromDraft(draft: ApplicationDraft): Promise<JobApplication> {
   if (!draft.companyId) {
-    throw new Error('Choose an existing company before adding an application.')
+    throw new Error('Select a company or create a new one before adding an application.')
   }
 
-  await createApplication({
-    userId,
+  const status = applicationStatusByDraft[draft.status]
+
+  return createApplication({
     companyId: draft.companyId,
     position: draft.role,
-    jobType: draft.jobType,
+    jobType: draft.jobType.trim() || null,
     description: draft.notes.trim() || null,
     salary: draft.salary,
-    status: applicationStatusByDraft[draft.status],
+    status,
     appliedAt: draft.appliedAt || null,
     source: draft.source,
     postingLink: draft.url.trim() || null,

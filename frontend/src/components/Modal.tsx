@@ -25,10 +25,19 @@ export default function Modal({
     dialog.showModal()
     dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus()
     const overflow = document.body.style.overflow
+    const paddingRight = document.body.style.paddingRight
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    if (scrollbarWidth > 0) {
+      const currentPaddingRight = Number.parseFloat(
+        window.getComputedStyle(document.body).paddingRight,
+      )
+      document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`
+    }
     document.body.style.overflow = 'hidden'
     return () => {
       dialog.close()
       document.body.style.overflow = overflow
+      document.body.style.paddingRight = paddingRight
       previous?.focus()
     }
   }, [open])
@@ -77,7 +86,7 @@ export default function Modal({
           }
         }
       }}
-      className={`m-auto max-h-[calc(100dvh-32px)] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[24px] border-0 bg-surface p-0 text-left text-heading ${className}`}
+      className={`m-auto max-h-[calc(100dvh-32px)] max-w-[calc(100vw-32px)] overflow-visible rounded-[24px] border-0 bg-surface p-0 text-left text-heading ${className}`}
     >
       {open && children}
     </dialog>

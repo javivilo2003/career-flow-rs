@@ -57,10 +57,8 @@ class JobApplicationRequestTest {
         assertThat(violations)
             .extracting(violation -> violation.getPropertyPath().toString())
             .containsExactlyInAnyOrder(
-                "userId",
                 "companyId",
                 "position",
-                "jobType",
                 "status",
                 "source"
             );

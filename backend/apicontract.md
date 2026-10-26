@@ -15,7 +15,7 @@ When this document disagrees with the implemented backend, the backend code desc
 - Pagination: `page` defaults to `0` and must be at least `0`; `size` defaults to `10` and must be between `1` and `100`.
 - `direction` accepts `ASC` or `DESC`.
 - Unsupported sort fields return `400 INVALID_REQUEST`.
-- Create endpoints with an empty response must not be parsed as JSON.
+- Create endpoints documented with an empty response must not be parsed as JSON.
 
 ### Page response
 
@@ -69,8 +69,8 @@ Every resource supports `GET /resource/{id}`, `PUT /resource/{id}`, and `DELETE 
 | Resource | Collection path | GET default sort | POST success |
 | --- | --- | --- | --- |
 | Users | `/api/users` | Not paginated | `200`, empty body |
-| Companies | `/api/companies` | `createdAt,DESC` | `200`, empty body |
-| Applications | `/api/applications` | `createdAt,DESC` | `201`, empty body |
+| Companies | `/api/companies` | `createdAt,DESC` | `201`, `CompanyDTO` |
+| Applications | `/api/applications` | `createdAt,DESC` | `201`, `JobApplicationDTO` |
 | Contacts | `/api/contacts` | `name,ASC` | `200`, empty body |
 | Interviews | `/api/interviews` | `interviewDate,ASC` | `200`, empty body |
 | Notes | `/api/notes` | `createdAt,DESC` | `201`, empty body |
@@ -107,7 +107,23 @@ POST/PUT request:
 
 `companyName` is required and nonblank. Other fields are nullable; a non-null `websiteUrl` must be a valid URL.
 
+`POST /api/companies` returns the persisted company directly, including its generated `id`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "companyName": "Acme",
+  "companyAddress": "Madrid, Spain",
+  "bio": "Software company",
+  "websiteUrl": "https://example.com"
+}
+```
+
+Company names are unique case-insensitively, and non-null website URLs remain unique. A known name or website uniqueness conflict returns `409 CONFLICT` in the shared error envelope.
+
 Filters: `id`, `companyName`, `address`, `bio`, `website`, `createdAt`.
+
+`companyName` performs a case-insensitive partial match. The other text filters retain exact matching behavior.
 
 Sort fields: `id`, `companyName`, `companyAddress`, `bio`, `websiteUrl`, `createdAt`.
 
@@ -115,14 +131,13 @@ Sort fields: `id`, `companyName`, `companyAddress`, `bio`, `websiteUrl`, `create
 
 Response fields: `id`, `userId`, `companyId`, `position`, `jobType`, `description`, `salary`, `status`, `appliedAt`, `source`, `postingLink`.
 
-POST/PUT request:
+POST request:
 
 ```json
 {
-  "userId": "00000000-0000-0000-0000-000000000000",
   "companyId": "00000000-0000-0000-0000-000000000000",
   "position": "Frontend Engineer",
-  "jobType": "Full-time",
+  "jobType": null,
   "description": null,
   "salary": null,
   "status": "SAVED",
@@ -132,7 +147,29 @@ POST/PUT request:
 }
 ```
 
-Required and non-null: `userId`, `companyId`, `position`, `jobType`, `status`, `source`. The current DTO uses `@NotNull`, so blank strings are not rejected at the DTO boundary. `description`, `salary`, `appliedAt`, and `postingLink` are nullable.
+Required and non-null: `companyId`, `position`, `status`, `source`. The DTO uses `@NotNull` for these fields, so blank strings are not rejected at the DTO boundary. `userId`, `jobType`, `description`, `salary`, `appliedAt`, and `postingLink` are nullable.
+
+For POST, omitting `userId` or sending it as `null` assigns the deterministic dedicated owner used by the single-user deployment. A supplied `userId` is preserved for compatibility and must reference an existing user; an unknown explicit owner returns `404 NOT_FOUND`. The persisted response always contains the resolved `userId`.
+
+`POST /api/applications` returns the persisted application directly, including its generated `id`:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "userId": "8bf7e93a-53a5-4a35-9ec8-2cf8f21a9c01",
+  "companyId": "00000000-0000-0000-0000-000000000000",
+  "position": "Frontend Engineer",
+  "jobType": null,
+  "description": null,
+  "salary": null,
+  "status": "SAVED",
+  "appliedAt": null,
+  "source": "Manual entry",
+  "postingLink": null
+}
+```
+
+PUT remains a full resource update for application fields. It accepts the same fields as POST plus the optional compatibility `userId`. If PUT omits `userId` or sends it as `null`, the application's stored owner is preserved. Supplying a different valid `userId` explicitly changes the owner; an unknown owner returns `404 NOT_FOUND`. `jobType` may be `null` in both requests and responses.
 
 Filters: `id`, `userId`, `companyId`, `position`, `jobType`, `minSalary`, `maxSalary`, `status`, `appliedAt`, `createdAt`, `source`.
 
@@ -236,6 +273,4 @@ Frontend wire types belong in `frontend/src/types/api.ts`; request types may rem
 
 These are current repository mismatches to resolve before relying on the affected flows:
 
-- `frontend/src/api/contacts.ts` defaults to `sort=createdAt`, but the contacts backend does not allow that sort field.
-- The frontend `Contact` type uses `companyId`, while the backend response sends `companyID`.
 - The frontend `FollowUp` type expects `id` and `jobApplicationId`, while the backend response sends no `id` and uses `applicationId`.

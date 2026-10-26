@@ -52,7 +52,6 @@ public class JobApplication {
     @NotNull
     private String position;
 
-    @NotNull
     private String jobType;
 
     private String description;

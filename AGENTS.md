@@ -1,11 +1,43 @@
-# CareerFlow
+# CareerFlow — Agent Instructions
 
-For frontend UI work, read and follow [the CareerFlow UI skill](skills/careerflow-ui/SKILL.md). It documents the Figma source, design tokens, component variants, and verification workflow. Reuse `frontend/src/components` and keep styling in Tailwind utilities.
+## General
+- Follow existing architecture, conventions, and patterns.
+- Inspect only task-relevant files; expand scope when necessary.
+- Make minimal, focused changes. Avoid unrelated refactoring or new dependencies unless justified.
+- Reuse existing components, utilities, and types.
+- Do not modify unrelated files or revert existing user changes.
 
-For work that adds, changes, debugs, or reviews communication between the frontend and backend, read and follow [the CareerFlow API contract skill](skills/careerflow-api-contract/SKILL.md). This includes frontend API modules and wire types as well as backend controllers, request/response DTOs, filters, enums, status codes, and error responses. Read `backend/apicontract.md` before making integration changes and keep it synchronized with the implemented backend contract.
+## Task-specific instructions
 
-## Required code checks
+### Frontend UI
+For UI tasks, follow `skills/careerflow-ui/SKILL.md`.
+- Reuse `frontend/src/components` and existing variants.
+- Use Tailwind utilities and established design tokens.
+- Follow the skill's Figma and visual verification guidance when relevant.
 
-After writing or changing code, run `npm run lint` and `npm run format:check` from `frontend` and verify both exit successfully before finishing. Fix all reported errors; use `npm run lint:fix` and `npm run format` where appropriate, then rerun both checks after the final edit. Run `npm run build` for frontend code changes as well. Do not disable rules or add ignore directives merely to make checks pass. If an environment issue prevents a check from running, report the blocker explicitly and do not claim verification succeeded.
+### Frontend–backend integration
+For API integration changes, debugging, or reviews, follow `skills/careerflow-api-contract/SKILL.md` and the relevant sections of `backend/apicontract.md`.
+- Keep frontend wire types, endpoints, and backend DTOs consistent.
+- Preserve documented status codes and error contracts.
+- Update `backend/apicontract.md` when the implemented backend contract changes.
 
-Keep API modules independent of components, pages, and hooks. Keep shared components independent of pages and API requests; pass data and callbacks as props. Split large files and functions by responsibility rather than adding arbitrary wrappers to satisfy limits.
+## Architecture
+- API modules must not depend on components, pages, or hooks.
+- Shared components must not depend on pages or make API requests; pass data and callbacks via props.
+- Split code by responsibility. Avoid unnecessary abstractions and wrappers.
+
+## Verification
+For frontend code changes, run from `frontend`:
+1. `npm run lint`
+2. `npm run format:check`
+3. `npm run build`
+
+- Fix reported issues without disabling rules or adding ignore directives merely to pass checks.
+- Use `npm run lint:fix` and `npm run format` when appropriate; rerun affected checks after fixes.
+- Run relevant tests for behavioral changes.
+- For backend-only or documentation-only changes, skip frontend checks unless affected.
+- If verification cannot run or fails, report it accurately.
+
+## Final response
+Keep it concise: summarize changes, validation results, and blockers. Do not paste entire files or lengthy command output unless requested.
+  

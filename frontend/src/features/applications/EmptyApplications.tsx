@@ -10,8 +10,8 @@ export default function EmptyApplications({
   children: ReactNode
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-[43px] bg-page px-[64px] text-center">
-      <div className=" ">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-page px-4 py-8 text-center sm:gap-[43px] sm:px-[64px] sm:py-0">
+      <div>
         <img
           className="h-[131px] w-[180px] object-contain"
           src="/career_flow_logo.png"
@@ -20,7 +20,7 @@ export default function EmptyApplications({
       </div>
 
       <header className="flex flex-col items-center gap-[12px]">
-        <h1 className="m-0 font-heading text-[40px] leading-normal font-bold tracking-normal text-heading">
+        <h1 className="m-0 font-heading text-4xl leading-normal font-bold tracking-normal text-heading sm:text-[40px]">
           Applications
         </h1>
         <p className="m-0 text-[18px] leading-normal font-normal text-body">
@@ -30,12 +30,16 @@ export default function EmptyApplications({
 
       <button
         type="button"
-        className="flex h-[400px] w-[500px] max-w-[600px] cursor-pointer flex-col items-center gap-[50px] rounded-[24px] border border-page bg-surface pt-[40px] pr-[64px] pb-[64px] pl-[62px]"
+        className="flex w-full max-w-[500px] cursor-pointer flex-col items-center gap-8 rounded-[24px] border border-page bg-surface px-5 py-8 sm:h-[400px] sm:gap-[50px] sm:pt-[40px] sm:pr-[64px] sm:pb-[64px] sm:pl-[62px]"
         aria-label="Create first application"
         onClick={openAddApplicationModal}
       >
-        <div className="flex size-[120px] shrink-0 hover-scale items-center justify-center rounded-[60px] bg-page transition-transform">
-          <HugeiconsIcon icon={Add01Icon} className="size-[48px] text-heading" aria-hidden="true" />
+        <div className="flex size-24 shrink-0 hover-scale items-center justify-center rounded-full bg-page transition-transform sm:size-[120px]">
+          <HugeiconsIcon
+            icon={Add01Icon}
+            className="size-10 text-heading sm:size-[48px]"
+            aria-hidden="true"
+          />
         </div>
 
         <div className="flex w-[410px] max-w-full flex-col items-center gap-4 text-center">

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -157,6 +158,20 @@ public class GlobalExceptionHandler {
                     ErrorCode.CONFLICT,
                     ex.getMessage(),
                     ex.getDetails()
+                )
+            ));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityConflict(DataIntegrityViolationException ex) {
+        log.warn("Data integrity conflict: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse(
+                new ApiError(
+                    ErrorCode.CONFLICT,
+                    "The request conflicts with existing data.",
+                    null
                 )
             ));
     }

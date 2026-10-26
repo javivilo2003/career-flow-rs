@@ -1,24 +1,119 @@
-import type { ApplicationStatus, JobApplication, Page } from '../types/api'
+import type { ApiErrorResponse, ApplicationStatus, JobApplication, Page } from '../types/api'
 
 export type JobApplicationRequest = {
-  userId: string
   companyId: string
   position: string
-  jobType: string
-  description: string | null
-  salary: number | null
+  jobType?: string | null
+  description?: string | null
+  salary?: number | null
   status: ApplicationStatus
-  appliedAt: string | null
+  appliedAt?: string | null
   source: string
-  postingLink: string | null
+  postingLink?: string | null
 }
 
-type GetApplicationsParams = {
+export type GetApplicationsParams = {
   page?: number
   size?: number
   sort?: string
   direction?: 'ASC' | 'DESC'
   status?: ApplicationStatus
+  companyId?: string
+}
+
+export type ApplicationApiErrorDetail = {
+  field: string
+  message: string
+}
+
+export class ApplicationApiError extends Error {
+  readonly status: number
+  readonly code?: ApiErrorResponse['error']['code']
+  readonly details: ApplicationApiErrorDetail[]
+
+  constructor(
+    message: string,
+    options: {
+      status: number
+      code?: ApiErrorResponse['error']['code']
+      details?: ApplicationApiErrorDetail[]
+    },
+  ) {
+    super(message)
+    this.name = 'ApplicationApiError'
+    this.status = options.status
+    this.code = options.code
+    this.details = options.details ?? []
+  }
+}
+
+const API_ERROR_CODES = new Set<ApiErrorResponse['error']['code']>([
+  'INVALID_REQUEST',
+  'VALIDATION_ERROR',
+  'NOT_FOUND',
+  'CONFLICT',
+  'INTERNAL_ERROR',
+])
+
+function isApiErrorDetail(value: unknown): value is ApplicationApiErrorDetail {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'field' in value &&
+    typeof value.field === 'string' &&
+    'message' in value &&
+    typeof value.message === 'string'
+  )
+}
+
+function isApiErrorCode(value: unknown): value is ApiErrorResponse['error']['code'] {
+  return (
+    typeof value === 'string' && API_ERROR_CODES.has(value as ApiErrorResponse['error']['code'])
+  )
+}
+
+function isApiErrorDetails(value: unknown): value is ApplicationApiErrorDetail[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.every(isApiErrorDetail))
+}
+
+function isApiError(value: unknown): value is ApiErrorResponse['error'] {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'code' in value &&
+    isApiErrorCode(value.code) &&
+    'message' in value &&
+    typeof value.message === 'string' &&
+    (!('details' in value) || isApiErrorDetails(value.details))
+  )
+}
+
+function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+  if (!value || typeof value !== 'object' || !('error' in value)) {
+    return false
+  }
+
+  return isApiError(value.error)
+}
+
+async function throwApiError(response: Response, fallbackMessage: string): Promise<never> {
+  let responseBody: unknown
+
+  try {
+    responseBody = await response.json()
+  } catch {
+    throw new ApplicationApiError(fallbackMessage, { status: response.status })
+  }
+
+  if (!isApiErrorResponse(responseBody)) {
+    throw new ApplicationApiError(fallbackMessage, { status: response.status })
+  }
+
+  throw new ApplicationApiError(responseBody.error.message, {
+    status: response.status,
+    code: responseBody.error.code,
+    details: responseBody.error.details,
+  })
 }
 
 export async function getApplications({
@@ -27,6 +122,7 @@ export async function getApplications({
   sort = 'createdAt',
   direction = 'DESC',
   status,
+  companyId,
 }: GetApplicationsParams = {}): Promise<Page<JobApplication>> {
   const query = new URLSearchParams({
     page: page.toString(),
@@ -39,10 +135,14 @@ export async function getApplications({
     query.set('status', status)
   }
 
+  if (companyId) {
+    query.set('companyId', companyId)
+  }
+
   const response = await fetch(`/api/applications?${query}`)
 
   if (!response.ok) {
-    throw new Error('Could not load applications.')
+    return throwApiError(response, 'Could not load applications.')
   }
 
   return response.json() as Promise<Page<JobApplication>>
@@ -52,22 +152,47 @@ export async function getApplication(id: string): Promise<JobApplication> {
   const response = await fetch(`/api/applications/${encodeURIComponent(id)}`)
 
   if (!response.ok) {
-    throw new Error('Could not load the application for this interview.')
+    return throwApiError(response, 'Could not load the application.')
   }
 
   return response.json() as Promise<JobApplication>
 }
 
-export async function createApplication(application: JobApplicationRequest): Promise<void> {
+export async function createApplication(
+  application: JobApplicationRequest,
+): Promise<JobApplication> {
+  const {
+    companyId,
+    position,
+    jobType,
+    description,
+    salary,
+    status,
+    appliedAt,
+    source,
+    postingLink,
+  } = application
   const response = await fetch('/api/applications', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(application),
+    body: JSON.stringify({
+      companyId,
+      position,
+      jobType,
+      description,
+      salary,
+      status,
+      appliedAt,
+      source,
+      postingLink,
+    }),
   })
 
   if (!response.ok) {
-    throw new Error('Could not create the application.')
+    return throwApiError(response, 'Could not create the application.')
   }
+
+  return response.json() as Promise<JobApplication>
 }

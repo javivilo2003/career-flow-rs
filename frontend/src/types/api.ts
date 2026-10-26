@@ -1,5 +1,14 @@
-export type ApplicationStatus =
-  'SAVED' | 'PREPARING' | 'APPLIED' | 'INTERVIEWING' | 'OFFER' | 'REJECTED' | 'WITHDRAWN'
+export const APPLICATION_STATUSES = [
+  'SAVED',
+  'PREPARING',
+  'APPLIED',
+  'INTERVIEWING',
+  'OFFER',
+  'REJECTED',
+  'WITHDRAWN',
+] as const
+
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
 export type InterviewStatus =
   'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED' | 'PASSED' | 'FAILED' | 'WAITING_FEEDBACK'
@@ -9,7 +18,7 @@ export type JobApplication = {
   userId: string
   companyId: string
   position: string
-  jobType: string
+  jobType: string | null
   description: string | null
   salary: number | null
   status: ApplicationStatus
@@ -39,8 +48,8 @@ export type Contact = {
   id: string
   companyId: string
   name: string
-  phone: string
-  email: string
+  phone: string | null
+  email: string | null
   jobRole: string
 }
 

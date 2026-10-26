@@ -25,7 +25,7 @@ Use the [CareerFlow Figma file](https://www.figma.com/design/UfLyaQqXPdEpkWeRdCU
 | --- | --- | --- |
 | JobCard | 46:3568 | Saved, Applied, Interview, Offer. 410×335 reference size; 24px padding; 22px gaps; 44px company mark; 21px bold title. Allow content to grow. |
 | Input | 46:3677 | Default, filled, focus, error, disabled. 48px control, 16px horizontal padding, 14px medium label. Focus border 2px beige; error border 1px danger plus 17px alert icon. |
-| Select | 46:3705 | Default, selected, open, disabled. Menu 8px below trigger, 6px padding, 2px gaps, 36px rows, selected slate fill and 16px check. |
+| Select | 46:3705 | Default, selected, open, disabled. Menu sits flush beneath the trigger with no gap, 6px padding, 2px gaps, 36px rows, selected slate fill and 16px check. |
 | Textarea | 46:3747 | Default and error. 108px control height, 16px horizontal/14px vertical padding; helper below. |
 | Button | 46:3760 | Primary, secondary, destructive, disabled. 48px height, 10px corners, 14px bold label. Width belongs to composition. |
 | Badge | 46:3769 | Saved, Applied, Interview, Offer, Rejected. 28px height, 12px horizontal padding, 14px icon, 12px semibold label. |
@@ -36,6 +36,8 @@ Use the [CareerFlow Figma file](https://www.figma.com/design/UfLyaQqXPdEpkWeRdCU
 ## Behavior and verification
 
 Filled/focus/disabled states should follow real values, focus, and native disabled semantics. Connect labels and helper/error IDs. Selects need keyboard navigation, Escape, outside dismissal, and a selected value. Dialogs need focus containment, Escape dismissal, and focus restoration. Do not hardcode specimen data into production components.
+
+The modal container itself must not be a scroll region. Size and compose dialog content to fit the supported viewport instead of adding `overflow-auto` or `overflow-scroll` to the modal container. Child controls and overlays may manage their own overflow and must remain visible and usable; for example, a long select menu may scroll without making the modal scroll.
 
 Keep the Figma desktop dimensions at the reference viewport; constrain surfaces to the available width and stack form columns on small screens. Responsive behavior beyond the supplied desktop designs is an implementation adaptation.
 

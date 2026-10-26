@@ -65,6 +65,7 @@
   }
   dialog::backdrop {
     background: var(--color-overlay);
+    backdrop-filter: blur(4px);
   }
 }
 

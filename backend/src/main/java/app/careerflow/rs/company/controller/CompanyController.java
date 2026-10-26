@@ -59,8 +59,9 @@ public class CompanyController {
     }
 
     @PostMapping()
-    public void createNewCompany(@Valid @RequestBody CompanyRequest request){
-        service.addNewCompany(request);
+    @ResponseStatus(HttpStatus.CREATED)
+    public CompanyDTO createNewCompany(@Valid @RequestBody CompanyRequest request){
+        return service.addNewCompany(request);
     }
 
     @ResponseStatus(HttpStatus.OK)

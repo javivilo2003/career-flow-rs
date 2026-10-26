@@ -5,13 +5,23 @@ type GetContactParams = {
   size?: number
   sort?: string
   direction?: 'ASC' | 'DESC'
+  companyId?: string
+}
+
+type ContactResponse = Omit<Contact, 'companyId'> & { companyID: string }
+
+function toContact(contact: ContactResponse): Contact {
+  const { companyID, ...fields } = contact
+
+  return { ...fields, companyId: companyID }
 }
 
 export async function getContacts({
   page = 0,
   size = 10,
-  sort = 'createdAt',
-  direction = 'DESC',
+  sort = 'name',
+  direction = 'ASC',
+  companyId,
 }: GetContactParams = {}): Promise<Page<Contact>> {
   const query = new URLSearchParams({
     page: page.toString(),
@@ -20,13 +30,19 @@ export async function getContacts({
     direction,
   })
 
+  if (companyId) {
+    query.set('companyId', companyId)
+  }
+
   const response = await fetch(`/api/contacts?${query}`)
 
   if (!response.ok) {
     throw new Error('Could not load contacts.')
   }
 
-  return response.json() as Promise<Page<Contact>>
+  const contacts = (await response.json()) as Page<ContactResponse>
+
+  return { ...contacts, content: contacts.content.map(toContact) }
 }
 
 export async function getContact(id: string): Promise<Contact> {
@@ -36,5 +52,5 @@ export async function getContact(id: string): Promise<Contact> {
     throw new Error('Could not load the contact for this company.')
   }
 
-  return response.json() as Promise<Contact>
+  return toContact((await response.json()) as ContactResponse)
 }

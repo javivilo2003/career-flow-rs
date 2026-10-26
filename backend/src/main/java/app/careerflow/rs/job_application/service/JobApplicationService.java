@@ -36,6 +36,10 @@ import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class JobApplicationService {
+
+    public static final UUID INTERNAL_OWNER_ID = UUID.fromString(
+        "8bf7e93a-53a5-4a35-9ec8-2cf8f21a9c01"
+    );
     
     private final JobApplicationRepository repository;
     private final JobApplicationMapper mapper;
@@ -236,12 +240,13 @@ public class JobApplicationService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
     }
 
-    public void addNewJobApplication(JobApplicationRequest request) throws Exception{
+    public JobApplicationDTO addNewJobApplication(JobApplicationRequest request) throws Exception{
         Company company = companyRepository.findById(request.companyId())
             .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
 
-        User user = userRepository.findById(request.userId())
-            .orElseThrow(() -> new ResourceNotFoundException(request.userId() + " not found."));
+        UUID ownerId = request.userId() == null ? INTERNAL_OWNER_ID : request.userId();
+        User user = userRepository.findById(ownerId)
+            .orElseThrow(() -> new ResourceNotFoundException(ownerId + " not found."));
 
         JobApplication application = mapper.toEntity(request, company, user);
 
@@ -250,21 +255,26 @@ public class JobApplicationService {
         log.info(
             "Created application id={} userId={} companyId={} status={}",
             application.getId(),
-            request.userId(),
+            ownerId,
             request.companyId(),
             request.status()
         );
+
+        return mapper.apply(application);
     }
 
     public JobApplicationDTO updateJobApplication(UUID id, JobApplicationRequest request) throws ResourceNotFoundException{
         Company company = companyRepository.findById(request.companyId())
             .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
 
-        User user = userRepository.findById(request.userId())
-            .orElseThrow(() -> new ResourceNotFoundException(request.userId() + " not found."));
-
         JobApplication application = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        User user = application.getUser();
+        if (request.userId() != null && !request.userId().equals(user.getId())) {
+            user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new ResourceNotFoundException(request.userId() + " not found."));
+        }
 
         application.setUser(user);
         application.setCompany(company);

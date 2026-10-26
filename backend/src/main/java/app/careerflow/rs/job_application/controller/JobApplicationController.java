@@ -59,8 +59,8 @@ public class JobApplicationController {
     
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping()
-    public void saveApplication(@Valid @RequestBody JobApplicationRequest request) throws Exception{
-        service.addNewJobApplication(request);
+    public JobApplicationDTO saveApplication(@Valid @RequestBody JobApplicationRequest request) throws Exception{
+        return service.addNewJobApplication(request);
     }
 
     @ResponseStatus(HttpStatus.OK)

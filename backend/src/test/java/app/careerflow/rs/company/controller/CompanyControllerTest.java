@@ -65,7 +65,7 @@ class CompanyControllerTest {
                       "websiteUrl": "https://testing.com/"
                     }
                     """))
-            .andExpect(status().isOk());
+            .andExpect(status().isCreated());
 
         verify(service).addNewCompany(argThat(request ->
             "Testing L.S.".equals(request.companyName())

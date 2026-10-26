@@ -1,3 +1,4 @@
+import Add01Icon from '@hugeicons/core-free-icons/Add01Icon'
 import AlertCircleIcon from '@hugeicons/core-free-icons/AlertCircleIcon'
 import Bookmark02Icon from '@hugeicons/core-free-icons/Bookmark02Icon'
 import ChevronDownIcon from '@hugeicons/core-free-icons/ChevronDownIcon'
@@ -28,6 +29,7 @@ export type IconName =
   | 'modal-x'
   | 'modal-trash2'
   | 'checkbox-check'
+  | 'button-add'
 
 type IconDefinition = {
   icon: IconSvgElement
@@ -52,6 +54,7 @@ const iconDefinitions: Record<IconName, IconDefinition> = {
   'modal-x': { icon: MultiplicationSignIcon, size: 20, className: 'text-body' },
   'modal-trash2': { icon: Delete02Icon, size: 22, className: 'text-danger' },
   'checkbox-check': { icon: Tick02Icon, size: 14, className: 'text-page' },
+  'button-add': { icon: Add01Icon, size: 18, className: 'text-heading' },
 }
 
 export default function Icon({ name }: { name: IconName }) {

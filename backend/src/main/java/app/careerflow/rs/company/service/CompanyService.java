@@ -4,6 +4,7 @@ package app.careerflow.rs.company.service;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import app.careerflow.rs.common.exception.ConflictException;
+import app.careerflow.rs.common.error.ApiErrorDetails;
 import app.careerflow.rs.common.exception.InvalidRequestException;
 import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.company.domain.Company;
@@ -97,8 +99,15 @@ public class CompanyService {
             }
 
             if (hasText(filter.companyName())) {
+                String companyName = escapeLikePattern(
+                    filter.companyName().trim().toLowerCase(Locale.ROOT)
+                );
                 predicates.add(
-                    builder.equal(root.get("companyName"), filter.companyName())
+                    builder.like(
+                        builder.lower(root.get("companyName")),
+                        "%" + companyName + "%",
+                        '\\'
+                    )
                 );
             }
 
@@ -157,6 +166,13 @@ public class CompanyService {
         return value != null && !value.isBlank();
     }
 
+    private String escapeLikePattern(String value) {
+        return value
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
+    }
+
     public CompanyDTO getCompanyById(UUID id) throws Exception{
         log.debug("Fetching company id={}", id);
         return repository.findById(id)
@@ -164,15 +180,19 @@ public class CompanyService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
     }
 
-    public void addNewCompany(CompanyRequest request){
+    public CompanyDTO addNewCompany(CompanyRequest request){
+        validateUniqueFields(request, null);
         Company company = mapper.toEntityCompany(request);
         repository.save(company);
         log.info("Created company id={}", company.getId());
+        return mapper.apply(company);
     }
 
     public CompanyDTO updateCompany(UUID id, CompanyRequest request) throws ResourceNotFoundException {
         Company company = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
+
+        validateUniqueFields(request, id);
 
         company.setCompanyName(request.companyName());
         company.setCompanyAddress(request.companyAddress());
@@ -181,6 +201,34 @@ public class CompanyService {
 
         repository.save(company);
         return mapper.apply(company);
+    }
+
+    private void validateUniqueFields(CompanyRequest request, UUID existingCompanyId) {
+        boolean duplicateName = existingCompanyId == null
+            ? repository.existsByCompanyNameIgnoreCase(request.companyName())
+            : repository.existsByCompanyNameIgnoreCaseAndIdNot(request.companyName(), existingCompanyId);
+
+        if (duplicateName) {
+            throw new ConflictException(
+                "A company with this name already exists.",
+                List.of(new ApiErrorDetails("companyName", "Company name must be unique."))
+            );
+        }
+
+        if (request.websiteUrl() == null) {
+            return;
+        }
+
+        boolean duplicateWebsite = existingCompanyId == null
+            ? repository.existsByWebsiteUrl(request.websiteUrl())
+            : repository.existsByWebsiteUrlAndIdNot(request.websiteUrl(), existingCompanyId);
+
+        if (duplicateWebsite) {
+            throw new ConflictException(
+                "A company with this website already exists.",
+                List.of(new ApiErrorDetails("websiteUrl", "Company website must be unique."))
+            );
+        }
     }
 
     public void deleteById(UUID id) throws ResourceNotFoundException, ConflictException {

@@ -234,7 +234,7 @@ function SelectOptions({
       id={`${fieldId}-options`}
       role="listbox"
       aria-labelledby={`${fieldId}-label`}
-      className="absolute top-full z-20 mt-2 flex w-full list-none flex-col gap-[2px] rounded-[10px] border border-border bg-page p-[6px]"
+      className="absolute top-full z-20 flex max-h-72 w-full list-none flex-col gap-[2px] overflow-y-auto overscroll-contain rounded-[10px] border border-border bg-page p-[6px]"
     >
       {options.map((option, index) => {
         const isSelected = current === option.value
@@ -301,10 +301,7 @@ export default function Select({
   const triggerClasses = triggerStateClasses(disabled, expanded, selected >= 0, error)
 
   return (
-    <div
-      className={`relative flex min-w-0 flex-col gap-[9px] text-left ${className}`}
-      onBlur={handleBlur}
-    >
+    <div className={`flex min-w-0 flex-col gap-[9px] text-left ${className}`} onBlur={handleBlur}>
       <label
         id={`${fieldId}-label`}
         htmlFor={fieldId}
@@ -313,38 +310,40 @@ export default function Select({
         {label}
       </label>
       <HiddenSelectInput name={name} value={current} disabled={disabled} />
-      <button
-        ref={trigger}
-        id={fieldId}
-        type="button"
-        role="combobox"
-        aria-haspopup="listbox"
-        aria-expanded={expanded}
-        aria-controls={`${fieldId}-options`}
-        aria-labelledby={`${fieldId}-label`}
-        aria-activedescendant={activeDescendant}
-        aria-required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={fieldDescription(fieldId, undefined, error)}
-        disabled={disabled}
-        onKeyDown={handleKey}
-        onClick={toggleOpen}
-        className={`flex h-12 w-full items-center gap-3 rounded-[10px] border bg-page px-4 text-left text-[15px] leading-[1.4] focus-visible:outline-2 focus-visible:outline-heading disabled:cursor-not-allowed ${triggerClasses}`}
-      >
-        <span className="min-w-0 flex-1 truncate">
-          {selectedOptionLabel(options, selected, placeholder)}
-        </span>
-        <Icon name={chevronName(disabled, expanded)} />
-      </button>
-      <SelectOptions
-        active={active}
-        choose={choose}
-        current={current}
-        expanded={expanded}
-        fieldId={fieldId}
-        options={options}
-        setActive={setActive}
-      />
+      <div className="relative w-full">
+        <button
+          ref={trigger}
+          id={fieldId}
+          type="button"
+          role="combobox"
+          aria-haspopup="listbox"
+          aria-expanded={expanded}
+          aria-controls={`${fieldId}-options`}
+          aria-labelledby={`${fieldId}-label`}
+          aria-activedescendant={activeDescendant}
+          aria-required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescription(fieldId, undefined, error)}
+          disabled={disabled}
+          onKeyDown={handleKey}
+          onClick={toggleOpen}
+          className={`flex h-12 w-full items-center gap-3 rounded-[10px] border bg-page px-4 text-left text-[15px] leading-[1.4] focus-visible:outline-2 focus-visible:outline-heading disabled:cursor-not-allowed ${triggerClasses}`}
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {selectedOptionLabel(options, selected, placeholder)}
+          </span>
+          <Icon name={chevronName(disabled, expanded)} />
+        </button>
+        <SelectOptions
+          active={active}
+          choose={choose}
+          current={current}
+          expanded={expanded}
+          fieldId={fieldId}
+          options={options}
+          setActive={setActive}
+        />
+      </div>
       <FieldMessage fieldId={fieldId} error={error} />
     </div>
   )
