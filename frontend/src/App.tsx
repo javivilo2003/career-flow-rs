@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import AppLayout from './components/AppLayout'
-import ApplicationDetailsPage from './pages/ApplicationDetailsPage'
 import ApplicationsPage from './pages/ApplicationsPage'
 import CompaniesPage from './pages/CompaniesPage'
 import CompanyDetailsPage from './pages/CompanyDetailsPage'
@@ -19,7 +18,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/applications" replace />} />
           <Route path="/applications" element={<ApplicationsPage />} />
-          <Route path="/applications/:applicationId" element={<ApplicationDetailsPage />} />
+          <Route path="/applications/:applicationId" element={<ApplicationsPage />} />
           <Route path="/companies" element={<CompaniesPage />} />
           <Route path="/companies/:companyId" element={<CompanyDetailsPage />} />
           <Route path="/contacts" element={<ContactsPage />} />

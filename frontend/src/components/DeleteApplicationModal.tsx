@@ -63,8 +63,8 @@ export function DeleteApplicationContent({
           Delete this application?
         </h2>
         <p id={descriptionId} className="m-0 text-base leading-[1.5] text-secondary">
-          This will permanently remove the application and all associated notes. This action cannot
-          be undone.
+          This will permanently remove the application. It can only be deleted when no notes,
+          interviews, or follow-ups reference it. This action cannot be undone.
         </p>
       </div>
       <div className="flex flex-col gap-[6px] rounded-[10px] bg-page p-5">

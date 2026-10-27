@@ -1,44 +1,94 @@
-import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import ApplicationCard from '../components/ApplicationCard'
+import {
+  applicationUpdateRequest,
+  deleteApplication,
+  updateApplication,
+} from '../apis/applications'
+import DeleteApplicationModal from '../components/DeleteApplicationModal'
 import PageStatus from '../components/PageStatus'
+import { ApplicationDetailsContent } from '../features/applications/ApplicationDetails'
+import { applicationsHref } from '../features/applications/applicationUrlState'
+import EditApplicationModal from '../features/applications/EditApplicationModal'
 import useApplicationDetails from '../features/applications/useApplicationDetails'
+import type { ApplicationStatus, JobApplication } from '../types/api'
 
 export default function ApplicationDetailsPage() {
   const { applicationId } = useParams()
-  const { details, isLoading, error } = useApplicationDetails(applicationId)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { details, isLoading, error, notFound, synchronize } = useApplicationDetails(applicationId)
+  const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const listHref = applicationsHref(location.search)
+
+  async function changeStatus(application: JobApplication, status: ApplicationStatus) {
+    const updated = await updateApplication(application.id, {
+      ...applicationUpdateRequest(application),
+      status,
+    })
+    synchronize(updated)
+    return updated
+  }
+  async function remove() {
+    if (!details) {
+      return
+    }
+    await deleteApplication(details.application.id)
+    await navigate(listHref, { replace: true })
+  }
 
   return (
     <main className="p-6 text-left sm:p-12">
-      <Link to="/applications" className="text-sm font-semibold text-secondary hover:text-heading">
+      <Link to={listHref} className="text-sm font-semibold text-secondary hover:text-heading">
         ← Back to applications
       </Link>
       <header className="mt-8 mb-8">
         <p className="m-0 font-bold text-accent">Application</p>
-        <h1 className="m-0 mt-8 font-heading text-5xl font-medium text-heading">
+        <h1 className="m-0 mt-4 font-heading text-3xl font-medium break-words text-heading sm:text-5xl">
           {details?.application.position ?? 'Application details'}
         </h1>
       </header>
-
       <PageStatus loading={isLoading} loadingLabel="Loading application details" error={error} />
-
+      {notFound && (
+        <Link
+          to={listHref}
+          className="mt-4 inline-flex text-sm font-semibold text-heading underline"
+        >
+          Return to applications
+        </Link>
+      )}
       {details && (
-        <div className="grid grid-auto-page gap-6">
-          <ApplicationCard
+        <ApplicationDetailsContent
+          {...details}
+          onEdit={() => setEditing(true)}
+          onDelete={() => setDeleting(true)}
+          onStatusChange={changeStatus}
+        />
+      )}
+      {details && (
+        <>
+          <EditApplicationModal
+            open={editing}
             application={details.application}
-            companyName={details.company.companyName}
+            company={details.company}
+            onClose={() => setEditing(false)}
+            onSaved={(application) => synchronize(application)}
           />
-          <section className="rounded-[24px] bg-surface p-6">
-            <h2 className="m-0 text-2xl font-bold text-heading">Company</h2>
-            <p className="m-0 mt-3 text-secondary">{details.company.companyName}</p>
-            <Link
-              to={`/companies/${details.company.id}`}
-              className="mt-6 inline-flex h-12 items-center rounded-[10px] bg-page px-5 text-sm font-bold text-heading"
-            >
-              View company
-            </Link>
-          </section>
-        </div>
+          <DeleteApplicationModal
+            open={deleting}
+            title={details.application.position}
+            company={details.company.companyName}
+            applicationDate={
+              details.application.appliedAt
+                ? `Applied ${details.application.appliedAt}`
+                : 'Not applied yet'
+            }
+            onClose={() => setDeleting(false)}
+            onDelete={remove}
+          />
+        </>
       )}
     </main>
   )

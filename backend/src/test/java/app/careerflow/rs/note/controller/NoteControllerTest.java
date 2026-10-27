@@ -85,7 +85,7 @@ class NoteControllerTest {
                 .content("""
                     {"jobApplicationId":"%s","content":"Follow up"}
                     """.formatted(applicationId)))
-            .andExpect(status().isOk());
+            .andExpect(status().isCreated());
 
         verify(service).addNewNote(argThat(request ->
             applicationId.equals(request.jobApplicationId())

@@ -85,7 +85,7 @@ class FollowUpControllerTest {
                 .content("""
                     {"applicationId":"%s","title":"Send email","dueDate":"2026-10-01","completed":false}
                     """.formatted(applicationId)))
-            .andExpect(status().isOk());
+            .andExpect(status().isCreated());
 
         verify(service).addNewFollowUp(argThat(request ->
             applicationId.equals(request.applicationId())

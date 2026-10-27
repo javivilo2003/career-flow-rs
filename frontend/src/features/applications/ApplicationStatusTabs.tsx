@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from 'react'
 
 import { APPLICATION_STATUSES, type ApplicationStatus, type JobApplication } from '../../types/api'
+import type { ApplicationStatusCounts } from './loadApplicationData'
 
 const statusLabels: Record<ApplicationStatus, string> = {
   SAVED: 'Saved',
@@ -12,8 +13,9 @@ const statusLabels: Record<ApplicationStatus, string> = {
   WITHDRAWN: 'Withdrawn',
 }
 
-type ApplicationStatusTabsProps = {
-  applications: JobApplication[]
+export type ApplicationStatusTabsProps = {
+  applications?: JobApplication[]
+  counts?: ApplicationStatusCounts
   selectedStatus: ApplicationStatus
   onSelect: (status: ApplicationStatus) => void
 }
@@ -29,6 +31,7 @@ function moveTabFocus(event: KeyboardEvent<HTMLButtonElement>, direction: number
 
 export default function ApplicationStatusTabs({
   applications,
+  counts,
   selectedStatus,
   onSelect,
 }: ApplicationStatusTabsProps) {
@@ -40,7 +43,10 @@ export default function ApplicationStatusTabs({
     >
       {APPLICATION_STATUSES.map((status) => {
         const selected = status === selectedStatus
-        const count = applications.filter((application) => application.status === status).length
+        const count =
+          counts?.[status] ??
+          applications?.filter((application) => application.status === status).length ??
+          0
 
         return (
           <button

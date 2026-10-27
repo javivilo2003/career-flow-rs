@@ -1,4 +1,4 @@
-const skeletonItems = Array.from({ length: 3 }, (_, index) => index)
+const skeletonItems = Array.from({ length: 6 }, (_, index) => index)
 
 export default function ApplicationsSkeleton() {
   return (

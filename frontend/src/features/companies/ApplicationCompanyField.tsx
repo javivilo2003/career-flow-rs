@@ -13,9 +13,11 @@ export type ApplicationCompanyFieldProps = {
   selectedCompanyName?: string
   error?: string
   disabled?: boolean
+  enableInlineCompanyCreation?: boolean
   searchCompanies?: SearchCompanies
   createCompany?: (request: CompanyRequest) => Promise<Company>
   onChange: (company: Company | null) => void
+  onCompanySelected?: (company: Company) => void
   onCompanyCreated?: (company: Company) => void
 }
 
@@ -97,18 +99,21 @@ export default function ApplicationCompanyField({
   selectedCompanyName = '',
   error,
   disabled,
+  enableInlineCompanyCreation = true,
   searchCompanies,
   createCompany,
   onChange,
+  onCompanySelected,
   onCompanyCreated,
 }: ApplicationCompanyFieldProps) {
-  const [query, setQuery] = useState(selectedCompanyName)
+  const [query, setQuery] = useState<string | null>(null)
   const [createName, setCreateName] = useState('')
   const [createMode, setCreateMode] = useState(false)
   const [createBusy, setCreateBusy] = useState(false)
   const createBusyRef = useRef(false)
   const [createError, setCreateError] = useState('')
-  const search = useCompanySearch({ query, initialCompanies, searchCompanies })
+  const displayedQuery = query ?? selectedCompanyName
+  const search = useCompanySearch({ query: displayedQuery, initialCompanies, searchCompanies })
 
   function select(company: Company) {
     setQuery(company.companyName)
@@ -145,18 +150,22 @@ export default function ApplicationCompanyField({
     <div className="min-w-0">
       <CompanyCombobox
         companies={search.companies}
-        query={query}
+        query={displayedQuery}
         selectedCompanyId={selectedCompanyId}
         onQueryChange={(value) => {
           setQuery(value)
           onChange(null)
         }}
-        onSelect={select}
+        onSelect={(company) => {
+          select(company)
+          onCompanySelected?.(company)
+        }}
         onCreate={(name) => {
           setCreateName(name)
           setCreateError('')
           setCreateMode(true)
         }}
+        allowCreate={enableInlineCompanyCreation && Boolean(createCompany)}
         onRetry={search.retry}
         onLoadMore={() => void search.loadMore()}
         loading={search.loading}

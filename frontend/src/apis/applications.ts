@@ -1,6 +1,7 @@
 import type { ApiErrorResponse, ApplicationStatus, JobApplication, Page } from '../types/api'
 
 export type JobApplicationRequest = {
+  userId?: string | null
   companyId: string
   position: string
   jobType?: string | null
@@ -19,11 +20,40 @@ export type GetApplicationsParams = {
   direction?: 'ASC' | 'DESC'
   status?: ApplicationStatus
   companyId?: string
+  position?: string
+}
+
+/** PUT is a full-resource update. Keep every field, including the persisted owner. */
+export type UpdateApplicationRequest = {
+  userId: string
+  companyId: string
+  position: string
+  jobType: string | null
+  description: string | null
+  salary: number | null
+  status: ApplicationStatus
+  appliedAt: string | null
+  source: string
+  postingLink: string | null
 }
 
 export type ApplicationApiErrorDetail = {
   field: string
   message: string
+}
+
+function addOptionalApplicationFilters(query: URLSearchParams, params: GetApplicationsParams) {
+  const filters = [
+    ['status', params.status],
+    ['companyId', params.companyId],
+    ['position', params.position?.trim()],
+  ] as const
+
+  filters.forEach(([name, value]) => {
+    if (value) {
+      query.set(name, value)
+    }
+  })
 }
 
 export class ApplicationApiError extends Error {
@@ -118,11 +148,12 @@ async function throwApiError(response: Response, fallbackMessage: string): Promi
 
 export async function getApplications({
   page = 0,
-  size = 10,
+  size = 25,
   sort = 'createdAt',
   direction = 'DESC',
   status,
   companyId,
+  position,
 }: GetApplicationsParams = {}): Promise<Page<JobApplication>> {
   const query = new URLSearchParams({
     page: page.toString(),
@@ -131,13 +162,7 @@ export async function getApplications({
     direction,
   })
 
-  if (status) {
-    query.set('status', status)
-  }
-
-  if (companyId) {
-    query.set('companyId', companyId)
-  }
+  addOptionalApplicationFilters(query, { status, companyId, position })
 
   const response = await fetch(`/api/applications?${query}`)
 
@@ -162,6 +187,7 @@ export async function createApplication(
   application: JobApplicationRequest,
 ): Promise<JobApplication> {
   const {
+    userId,
     companyId,
     position,
     jobType,
@@ -178,6 +204,7 @@ export async function createApplication(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      userId,
       companyId,
       position,
       jobType,
@@ -195,4 +222,46 @@ export async function createApplication(
   }
 
   return response.json() as Promise<JobApplication>
+}
+
+export async function updateApplication(
+  id: string,
+  application: UpdateApplicationRequest,
+): Promise<JobApplication> {
+  const response = await fetch(`/api/applications/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(application),
+  })
+
+  if (!response.ok) {
+    return throwApiError(response, 'Could not update the application.')
+  }
+
+  return response.json() as Promise<JobApplication>
+}
+
+export async function deleteApplication(id: string): Promise<void> {
+  const response = await fetch(`/api/applications/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    return throwApiError(response, 'Could not delete the application.')
+  }
+}
+
+export function applicationUpdateRequest(application: JobApplication): UpdateApplicationRequest {
+  return {
+    userId: application.userId,
+    companyId: application.companyId,
+    position: application.position,
+    jobType: application.jobType,
+    description: application.description,
+    salary: application.salary,
+    status: application.status,
+    appliedAt: application.appliedAt,
+    source: application.source,
+    postingLink: application.postingLink,
+  }
 }

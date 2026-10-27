@@ -3,6 +3,7 @@ package app.careerflow.rs.job_application.service;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -96,7 +97,7 @@ public class JobApplicationService {
     }
 
     private Sort createSafeSort(String requestedField, Sort.Direction direction) {
-    String entityProperty = SORT_FIELDS.get(requestedField);
+        String entityProperty = SORT_FIELDS.get(requestedField);
 
         if (entityProperty == null) {
             throw new InvalidRequestException(
@@ -104,7 +105,12 @@ public class JobApplicationService {
             );
         }
 
-        return Sort.by(direction, entityProperty);
+        Sort sort = Sort.by(direction, entityProperty);
+        if (!"id".equals(entityProperty)) {
+            sort = sort.and(Sort.by(direction, "id"));
+        }
+
+        return sort;
     }
 
     private Specification<JobApplication> createSpecification(
@@ -141,7 +147,8 @@ public class JobApplicationService {
                 predicates.add(
                     builder.like(
                         builder.lower(root.get("position")),
-                        "%" + filter.position().trim().toLowerCase() + "%"
+                        containsPattern(filter.position()),
+                        '\\'
                     )
                 );
             }
@@ -231,6 +238,16 @@ public class JobApplicationService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private String containsPattern(String value) {
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        String escaped = normalized
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
+
+        return "%" + escaped + "%";
     }
 
     public JobApplicationDTO getJobApplicationById(UUID id) throws Exception{

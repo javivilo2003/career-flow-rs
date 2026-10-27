@@ -15,6 +15,7 @@ When this document disagrees with the implemented backend, the backend code desc
 - Pagination: `page` defaults to `0` and must be at least `0`; `size` defaults to `10` and must be between `1` and `100`.
 - `direction` accepts `ASC` or `DESC`.
 - Unsupported sort fields return `400 INVALID_REQUEST`.
+- Paginated application sorting uses `id` in the requested direction as a stable secondary sort unless `id` is already the primary sort.
 - Create endpoints documented with an empty response must not be parsed as JSON.
 
 ### Page response
@@ -169,11 +170,32 @@ For POST, omitting `userId` or sending it as `null` assigns the deterministic de
 }
 ```
 
-PUT remains a full resource update for application fields. It accepts the same fields as POST plus the optional compatibility `userId`. If PUT omits `userId` or sends it as `null`, the application's stored owner is preserved. Supplying a different valid `userId` explicitly changes the owner; an unknown owner returns `404 NOT_FOUND`. `jobType` may be `null` in both requests and responses.
+PUT remains a full resource update for application fields. Clients editing an application should send the complete representation:
+
+```json
+{
+  "userId": "8bf7e93a-53a5-4a35-9ec8-2cf8f21a9c01",
+  "companyId": "00000000-0000-0000-0000-000000000000",
+  "position": "Frontend Engineer",
+  "jobType": null,
+  "description": null,
+  "salary": null,
+  "status": "APPLIED",
+  "appliedAt": "2026-10-27",
+  "source": "Manual entry",
+  "postingLink": null
+}
+```
+
+`companyId`, `position`, `status`, and `source` remain required. All application fields other than ownership are replaced by the supplied values, so omitting a nullable field clears it. If PUT omits `userId` or sends it as `null`, the application's stored owner is preserved. Supplying a different valid `userId` explicitly changes the owner; an unknown owner returns `404 NOT_FOUND`. `jobType` may be `null` in both requests and responses.
 
 Filters: `id`, `userId`, `companyId`, `position`, `jobType`, `minSalary`, `maxSalary`, `status`, `appliedAt`, `createdAt`, `source`.
 
+`position` performs a case-insensitive partial match after trimming surrounding whitespace. `%`, `_`, and `\\` are treated as literal search characters rather than SQL wildcard syntax. Blank position filters are ignored.
+
 Sort fields: `id`, `createdAt`, `appliedAt`, `position`, `salary`, `status`, `companyName`.
+
+`DELETE /api/applications/{id}` returns `204` with no body when deletion succeeds. It returns `409 CONFLICT` in the shared error envelope when an interview, note, or follow-up still references the application. An unknown application returns `404 NOT_FOUND`.
 
 ## Contacts
 

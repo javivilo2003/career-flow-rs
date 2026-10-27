@@ -9,6 +9,7 @@ export type CompanyComboboxProps = {
   onQueryChange: (query: string) => void
   onSelect: (company: Company) => void
   onCreate: (name: string) => void
+  allowCreate?: boolean
   onRetry?: () => void
   onLoadMore?: () => void
   loading?: boolean
@@ -133,6 +134,10 @@ function bounded(index: number, count: number) {
   return count === 0 ? -1 : Math.min(count - 1, Math.max(0, index))
 }
 
+function activeOption(index: number, count: number) {
+  return index < 0 ? -1 : bounded(index, count)
+}
+
 export default function CompanyCombobox(props: CompanyComboboxProps) {
   const id = useId()
   const [open, setOpen] = useState(false)
@@ -142,9 +147,9 @@ export default function CompanyCombobox(props: CompanyComboboxProps) {
     (company) =>
       company.companyName.localeCompare(trimmedQuery, undefined, { sensitivity: 'accent' }) === 0,
   )
-  const canCreate = Boolean(trimmedQuery) && !exactMatch
+  const canCreate = props.allowCreate !== false && Boolean(trimmedQuery) && !exactMatch
   const itemCount = props.companies.length + Number(canCreate)
-  const active = bounded(activeIndex, itemCount)
+  const active = activeOption(activeIndex, itemCount)
   const expanded = open && !props.disabled
 
   function chooseActive() {

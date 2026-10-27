@@ -29,6 +29,10 @@ export type AddApplicationFormProps = {
   initialValues?: Partial<ApplicationDraft>
   onSubmit: (values: ApplicationDraft) => void | Promise<void>
   onClose: () => void
+  title?: string
+  description?: string
+  submitLabel?: string
+  enableInlineCompanyCreation?: boolean
   busy?: boolean
   error?: string
   titleId?: string
@@ -39,6 +43,7 @@ export type AddApplicationFormProps = {
   companyOptions?: readonly SelectOption[]
   onSearchCompanies?: SearchCompanies
   onCreateCompany?: (request: CompanyRequest) => Promise<Company>
+  onCompanySelected?: (company: Company) => void
   onCompanyCreated?: (company: Company) => void
 }
 const statuses: ApplicationDraftStatus[] = [
@@ -51,6 +56,31 @@ const statuses: ApplicationDraftStatus[] = [
   'Withdrawn',
 ]
 const noCompanyOptions: readonly SelectOption[] = []
+
+function applicationDraft(initialValues?: Partial<ApplicationDraft>): ApplicationDraft {
+  return {
+    role: '',
+    companyId: '',
+    jobType: '',
+    source: 'Manual entry',
+    salary: null,
+    appliedAt: '',
+    url: '',
+    status: 'Saved',
+    notes: '',
+    ...initialValues,
+  }
+}
+
+function hasOptionalDetails(draft: ApplicationDraft) {
+  return Boolean(
+    draft.jobType ||
+    draft.source !== 'Manual entry' ||
+    draft.salary !== null ||
+    draft.appliedAt ||
+    draft.notes,
+  )
+}
 
 function companySeeds(companies: readonly Company[] | undefined, options: readonly SelectOption[]) {
   return companies
@@ -110,16 +140,8 @@ function validateDraft(values: ApplicationDraft): ApplicationErrors {
   return { ...validateRequiredFields(values), ...validateOptionalFields(values) }
 }
 
-function hasErrors(errors: ApplicationErrors) {
-  return Object.keys(errors).length > 0
-}
-
 function hasOptionalErrors(errors: ApplicationErrors) {
   return Boolean(errors.salary || errors.appliedAt || errors.url || errors.notes)
-}
-
-function visibleErrors(showValidationErrors: boolean, errors: ApplicationErrors) {
-  return showValidationErrors ? errors : {}
 }
 
 function normalizedDraft(values: ApplicationDraft): ApplicationDraft {
@@ -133,17 +155,10 @@ function normalizedDraft(values: ApplicationDraft): ApplicationDraft {
   }
 }
 
-function applicationFormWidth(optionalDetailsOpen: boolean) {
-  return optionalDetailsOpen ? 'w-[1120px]' : 'w-[680px]'
-}
-
-function applicationFormHeight(optionalDetailsOpen: boolean) {
-  return optionalDetailsOpen ? 'h-[704px]' : 'h-[656px]'
-}
-
-function detailsButtonLabel(optionalDetailsOpen: boolean) {
-  return optionalDetailsOpen ? 'Hide optional details' : '+ Add optional details'
-}
+const applicationFormWidth = (open: boolean) => (open ? 'w-[1120px]' : 'w-[680px]')
+const applicationFormHeight = (open: boolean) => (open ? 'h-[704px]' : 'h-[656px]')
+const detailsButtonLabel = (open: boolean) =>
+  open ? 'Hide optional details' : '+ Add optional details'
 
 type ApplicationFieldsProps = {
   values: ApplicationDraft
@@ -298,7 +313,15 @@ function FormFeedback({
   )
 }
 
-function ApplicationFormFooter({ pending, onClose }: { pending: boolean; onClose: () => void }) {
+function ApplicationFormFooter({
+  pending,
+  onClose,
+  submitLabel,
+}: {
+  pending: boolean
+  onClose: () => void
+  submitLabel: string
+}) {
   return (
     <footer className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-border pt-[23px]">
       <p className="m-0 text-xs text-body">* Required fields</p>
@@ -315,17 +338,29 @@ function ApplicationFormFooter({ pending, onClose }: { pending: boolean; onClose
           className="min-w-0 flex-1 sm:w-[172px] sm:flex-none"
           disabled={pending}
         >
-          {pending ? 'Saving…' : 'Save application'}
+          {pending ? 'Saving…' : submitLabel}
         </Button>
       </div>
     </footer>
   )
 }
 
-export function AddApplicationForm({
-  initialValues,
+type ApplicationFormStateProps = AddApplicationFormProps & {
+  initialDraft: ApplicationDraft
+  title: string
+  description: string
+  submitLabel: string
+  enableInlineCompanyCreation: boolean
+}
+
+function ApplicationFormState({
+  initialDraft,
   onSubmit,
   onClose,
+  title,
+  description,
+  submitLabel,
+  enableInlineCompanyCreation,
   busy = false,
   error,
   titleId,
@@ -334,27 +369,19 @@ export function AddApplicationForm({
   companyOptions = noCompanyOptions,
   onSearchCompanies,
   onCreateCompany,
+  onCompanySelected,
   onCompanyCreated,
-}: AddApplicationFormProps) {
+}: ApplicationFormStateProps) {
   const generatedId = useId()
   const optionalDetailsId = `${generatedId}-optional-details`
-  const [values, setValues] = useState<ApplicationDraft>({
-    role: '',
-    companyId: '',
-    jobType: '',
-    source: 'Manual entry',
-    salary: null,
-    appliedAt: '',
-    url: '',
-    status: 'Saved',
-    notes: '',
-    ...initialValues,
-  })
+  const [values, setValues] = useState<ApplicationDraft>(initialDraft)
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const [submitError, setSubmitError] = useState('')
   const [showValidationErrors, setShowValidationErrors] = useState(false)
-  const [optionalDetailsOpen, setOptionalDetailsOpen] = useState(false)
+  const [optionalDetailsOpen, setOptionalDetailsOpen] = useState(() =>
+    hasOptionalDetails(initialDraft),
+  )
   const initialCompanies = useMemo<Company[]>(
     () => companySeeds(suppliedCompanies, companyOptions),
     [companyOptions, suppliedCompanies],
@@ -362,7 +389,7 @@ export function AddApplicationForm({
   const initiallySelected = initialCompanies.find((company) => company.id === values.companyId)
   const pending = busy || submitting
   const validationErrors = validateDraft(values)
-  const errors = visibleErrors(showValidationErrors, validationErrors)
+  const errors = showValidationErrors ? validationErrors : {}
   function update<K extends keyof ApplicationDraft>(key: K, value: ApplicationDraft[K]) {
     setValues((current) => ({ ...current, [key]: value }))
   }
@@ -373,7 +400,7 @@ export function AddApplicationForm({
       return
     }
     setShowValidationErrors(true)
-    if (hasErrors(validationErrors)) {
+    if (Object.keys(validationErrors).length > 0) {
       if (hasOptionalErrors(validationErrors)) {
         setOptionalDetailsOpen(true)
       }
@@ -402,11 +429,9 @@ export function AddApplicationForm({
       <header className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
           <h2 id={titleId ?? generatedId} className="m-0 text-[28px] font-bold text-heading">
-            Add job application
+            {title}
           </h2>
-          <p className="m-0 text-sm leading-[16px] text-secondary">
-            Keep your next opportunity in one place.
-          </p>
+          <p className="m-0 text-sm leading-[16px] text-secondary">{description}</p>
         </div>
         <button
           type="button"
@@ -438,7 +463,9 @@ export function AddApplicationForm({
                   disabled={pending}
                   searchCompanies={onSearchCompanies}
                   createCompany={onCreateCompany}
+                  enableInlineCompanyCreation={enableInlineCompanyCreation}
                   onChange={(company) => update('companyId', company?.id ?? '')}
+                  onCompanySelected={onCompanySelected}
                   onCompanyCreated={onCompanyCreated}
                 />
               }
@@ -465,8 +492,24 @@ export function AddApplicationForm({
           {children}
         </FormFeedback>
       </div>
-      <ApplicationFormFooter pending={pending} onClose={onClose} />
+      <ApplicationFormFooter pending={pending} onClose={onClose} submitLabel={submitLabel} />
     </form>
+  )
+}
+
+export function AddApplicationForm(props: AddApplicationFormProps) {
+  const initialDraft = applicationDraft(props.initialValues)
+
+  return (
+    <ApplicationFormState
+      key={JSON.stringify(initialDraft)}
+      {...props}
+      initialDraft={initialDraft}
+      title={props.title ?? 'Add job application'}
+      description={props.description ?? 'Keep your next opportunity in one place.'}
+      submitLabel={props.submitLabel ?? 'Save application'}
+      enableInlineCompanyCreation={props.enableInlineCompanyCreation ?? true}
+    />
   )
 }
 export type AddApplicationModalProps = AddApplicationFormProps & { open: boolean }
