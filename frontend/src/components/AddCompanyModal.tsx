@@ -17,6 +17,9 @@ export type AddCompanyModalProps = {
   open: boolean
   onClose: () => void
   onSubmit: (values: CompanyDraft) => void | Promise<void>
+  initialValues?: CompanyDraft
+  title?: string
+  submitLabel?: string
 }
 
 type CompanyErrors = Partial<Record<keyof CompanyDraft, string>>
@@ -43,14 +46,22 @@ function validateCompany(values: CompanyDraft): CompanyErrors {
   return errors
 }
 
-export default function AddCompanyModal({ open, onClose, onSubmit }: AddCompanyModalProps) {
+export default function AddCompanyModal({
+  open,
+  onClose,
+  onSubmit,
+  initialValues,
+  title = 'Add company',
+  submitLabel = 'Save company',
+}: AddCompanyModalProps) {
   const titleId = useId()
-  const [values, setValues] = useState<CompanyDraft>({
+  const emptyValues: CompanyDraft = {
     companyName: '',
     companyAddress: '',
     bio: '',
     websiteUrl: '',
-  })
+  }
+  const [values, setValues] = useState<CompanyDraft>(initialValues ?? emptyValues)
   const [errors, setErrors] = useState<CompanyErrors>({})
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -81,7 +92,7 @@ export default function AddCompanyModal({ open, onClose, onSubmit }: AddCompanyM
         bio: values.bio.trim(),
         websiteUrl: values.websiteUrl.trim(),
       })
-      setValues({ companyName: '', companyAddress: '', bio: '', websiteUrl: '' })
+      setValues(initialValues ?? emptyValues)
       setErrors({})
     } catch (reason) {
       setSubmitError(reason instanceof Error ? reason.message : 'Could not save the company.')
@@ -100,7 +111,7 @@ export default function AddCompanyModal({ open, onClose, onSubmit }: AddCompanyM
         <header className="flex shrink-0 items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h2 id={titleId} className="m-0 text-[28px] font-bold text-heading">
-              Add company
+              {title}
             </h2>
             <p className="m-0 text-sm leading-[16px] text-secondary">
               Keep the organizations in your job search organized.
@@ -173,7 +184,7 @@ export default function AddCompanyModal({ open, onClose, onSubmit }: AddCompanyM
               className="min-w-0 flex-1 sm:w-[148px] sm:flex-none"
               disabled={submitting}
             >
-              {submitting ? 'Saving…' : 'Save company'}
+              {submitting ? 'Saving…' : submitLabel}
             </Button>
           </div>
         </footer>

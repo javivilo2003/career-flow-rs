@@ -1,85 +1,110 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { getApplications } from '../../apis/applications'
+import Button from '../../components/Button'
 import SummaryCard from '../../components/SummaryCard'
+import { APPLICATION_STATUSES, type ApplicationStatus } from '../../types/api'
 
-type ApplicationSummary = {
-  total: number
-  interviewing: number
-  offers: number
+const LABELS: Record<ApplicationStatus, string> = {
+  SAVED: 'Saved',
+  PREPARING: 'Preparing',
+  APPLIED: 'Applied',
+  INTERVIEWING: 'Interviewing',
+  OFFER: 'Offer',
+  REJECTED: 'Rejected',
+  WITHDRAWN: 'Withdrawn',
 }
 
+type Summary = { total: number; statuses: Record<ApplicationStatus, number> }
+
 export default function ApplicationSummarySection() {
-  const [summary, setSummary] = useState<ApplicationSummary | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [summary, setSummary] = useState<Summary | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [version, setVersion] = useState(0)
+  const retry = useCallback(() => setVersion((value) => value + 1), [])
   useEffect(() => {
-    let isCancelled = false
-
-    async function loadSummary() {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      setError(null)
       try {
-        const [allApplications, interviewingApplications, offerApplications] = await Promise.all([
+        const [all, ...statusPages] = await Promise.all([
           getApplications({ size: 1 }),
-          getApplications({ size: 1, status: 'INTERVIEWING' }),
-          getApplications({ size: 1, status: 'OFFER' }),
+          ...APPLICATION_STATUSES.map((status) => getApplications({ size: 1, status })),
         ])
-
-        if (!isCancelled) {
+        if (!cancelled) {
           setSummary({
-            total: allApplications.totalElements,
-            interviewing: interviewingApplications.totalElements,
-            offers: offerApplications.totalElements,
+            total: all.totalElements,
+            statuses: Object.fromEntries(
+              APPLICATION_STATUSES.map((status, index) => [
+                status,
+                statusPages[index].totalElements,
+              ]),
+            ) as Record<ApplicationStatus, number>,
           })
         }
-      } catch (requestError) {
-        if (!isCancelled) {
-          const message =
-            requestError instanceof Error
-              ? requestError.message
-              : 'Could not load the application summary.'
-
-          setError(message)
+      } catch (reason) {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : 'Could not load progress.')
         }
       } finally {
-        if (!isCancelled) {
-          setIsLoading(false)
+        if (!cancelled) {
+          setLoading(false)
         }
       }
     }
-
-    void loadSummary()
-
+    void load()
     return () => {
-      isCancelled = true
+      cancelled = true
     }
-  }, [])
+  }, [version])
 
   return (
-    <section className="col-span-full rounded-2xl bg-surface p-6">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <h2 className="m-0 mb-2 font-heading text-2xl leading-tight font-medium tracking-normal text-heading">
-          Application summary
-        </h2>
-        <Link to="/applications" className="font-bold text-accent">
-          View job applications
-        </Link>
-      </div>
-
-      {isLoading && <p className="m-0">Loading application summary...</p>}
-
-      {!isLoading && error && (
-        <p role="alert" className="m-0">
-          {error}
+    <section
+      className="rounded-[24px] bg-surface p-6"
+      aria-labelledby="application-progress-heading"
+    >
+      <h2 id="application-progress-heading" className="m-0 text-2xl font-bold text-heading">
+        Applications
+      </h2>
+      <p className="m-0 mt-2 text-sm text-body">Current totals from your tracked opportunities.</p>
+      {loading && (
+        <p role="status" className="mt-5">
+          Loading application progress…
         </p>
       )}
-
-      {!isLoading && !error && summary && (
-        <div className="grid grid-auto-summary gap-4">
-          <SummaryCard label="Total applications" value={summary.total} />
-          <SummaryCard label="Interviewing" value={summary.interviewing} />
-          <SummaryCard label="Offers" value={summary.offers} />
+      {error && (
+        <div role="alert" className="mt-5 rounded-[10px] bg-danger-surface p-4 text-danger">
+          <p className="m-0">{error}</p>
+          <Button variant="secondary" className="mt-3" onClick={retry}>
+            Retry
+          </Button>
         </div>
+      )}
+      {summary && !error && (
+        <>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <SummaryCard label="Total tracked" value={summary.total} />
+            <SummaryCard label="Interviewing now" value={summary.statuses.INTERVIEWING} />
+            <SummaryCard label="Current offers" value={summary.statuses.OFFER} />
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {APPLICATION_STATUSES.map((status) => (
+              <Link
+                key={status}
+                to={`/applications?status=${status}`}
+                className="rounded-[10px] border border-border bg-page p-4 focus-visible:outline-2 focus-visible:outline-heading"
+              >
+                <span className="block text-sm text-body">{LABELS[status]}</span>
+                <span className="mt-2 block text-2xl font-bold text-heading">
+                  {summary.statuses[status]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </section>
   )

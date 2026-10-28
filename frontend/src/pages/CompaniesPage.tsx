@@ -5,60 +5,120 @@ import AddCompanyModal, { type CompanyDraft } from '../components/AddCompanyModa
 import Button from '../components/Button'
 import CompanyCard from '../components/CompanyCard'
 import Icon from '../components/Icon'
-import EmptyCompanies from '../features/companies/EmptyCompanies'
+import Input from '../components/Input'
 import useCompaniesData from '../features/companies/useCompaniesData'
-import type { Company } from '../types/api'
+import type { Company, Page } from '../types/api'
 
-type CompaniesContentProps = {
-  companies: Company[]
-  isLoading: boolean
-  error: string | null
-  openAddCompanyModal: () => void
-  addCompanyModal: React.ReactNode
-}
-
-function isReady(isLoading: boolean, error: string | null) {
-  return !isLoading && error === null
-}
-
-function CompaniesList({
-  companies,
-  isLoading,
-  error,
-}: Pick<CompaniesContentProps, 'companies' | 'isLoading' | 'error'>) {
-  if (isLoading) {
-    return <p className="m-0">Loading companies...</p>
+function companyRequest(draft: CompanyDraft) {
+  const optional = (value: string) => value || null
+  return {
+    companyName: draft.companyName,
+    companyAddress: optional(draft.companyAddress),
+    bio: optional(draft.bio),
+    websiteUrl: optional(draft.websiteUrl),
   }
-  if (error) {
+}
+
+function CompanyResults({
+  companies,
+  result,
+  loading,
+  error,
+  query,
+  retry,
+  clear,
+  add,
+  setPage,
+}: {
+  companies: Company[]
+  result: Page<Company> | null
+  loading: boolean
+  error: string | null
+  query: string
+  retry: () => void
+  clear: () => void
+  add: () => void
+  setPage: React.Dispatch<React.SetStateAction<number>>
+}) {
+  if (loading) {
     return (
-      <p role="alert" className="m-0">
-        {error}
+      <p role="status" className="rounded-[24px] bg-surface p-8">
+        Loading companies…
       </p>
     )
   }
-
+  if (error) {
+    return (
+      <div role="alert" className="rounded-[24px] bg-danger-surface p-8 text-danger">
+        <p className="m-0">{error}</p>
+        <Button variant="secondary" className="mt-4" onClick={retry}>
+          Retry
+        </Button>
+      </div>
+    )
+  }
+  if (!companies.length) {
+    return (
+      <div className="rounded-[24px] bg-surface p-8 text-center">
+        <h2 className="m-0 text-2xl font-bold text-heading">
+          {query ? 'No companies match your search' : 'No companies yet'}
+        </h2>
+        <p className="m-0 mt-2">Add a company or adjust your search.</p>
+        <Button
+          className="mt-6"
+          variant={query ? 'secondary' : 'primary'}
+          onClick={query ? clear : add}
+        >
+          {query ? 'Clear filters' : 'Add company'}
+        </Button>
+      </div>
+    )
+  }
   return (
-    <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(410px,100%),410px))] gap-6 p-0">
-      {companies.map((company) => (
-        <li key={company.id} className="min-w-0">
-          <CompanyCard company={company} detailsPath={`/companies/${company.id}`} />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(410px,100%),410px))] gap-6 p-0">
+        {companies.map((company) => (
+          <li key={company.id} className="min-w-0">
+            <CompanyCard company={company} detailsPath={`/companies/${company.id}`} />
+          </li>
+        ))}
+      </ul>
+      {result && result.totalPages > 1 && (
+        <nav aria-label="Company pages" className="mt-8 flex items-center gap-4">
+          <Button
+            variant="secondary"
+            disabled={result.first}
+            onClick={() => setPage((value) => value - 1)}
+          >
+            Previous
+          </Button>
+          <span>
+            Page {result.number + 1} of {result.totalPages}
+          </span>
+          <Button
+            variant="secondary"
+            disabled={result.last}
+            onClick={() => setPage((value) => value + 1)}
+          >
+            Next
+          </Button>
+        </nav>
+      )}
+    </>
   )
 }
 
-function CompaniesContent({
-  companies,
-  isLoading,
-  error,
-  openAddCompanyModal,
-  addCompanyModal,
-}: CompaniesContentProps) {
-  if (isReady(isLoading, error) && companies.length === 0) {
-    return (
-      <EmptyCompanies openAddCompanyModal={openAddCompanyModal}>{addCompanyModal}</EmptyCompanies>
-    )
+export default function CompaniesPage() {
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
+  const [adding, setAdding] = useState(false)
+  const { companies, result, isLoading, error, retry, refresh } = useCompaniesData(query, page)
+
+  async function handleCreate(draft: CompanyDraft) {
+    await createCompany(companyRequest(draft))
+    setAdding(false)
+    setPage(0)
+    refresh()
   }
 
   return (
@@ -71,51 +131,50 @@ function CompaniesContent({
           </h1>
           <p className="m-0">Keep your company research and opportunities organized.</p>
         </div>
-        {isReady(isLoading, error) && (
-          <Button variant="primary" className="gap-2" onClick={openAddCompanyModal}>
-            <Icon name="button-add" />
-            Add company
+        <Button className="gap-2" onClick={() => setAdding(true)}>
+          <Icon name="button-add" />
+          Add company
+        </Button>
+      </header>
+      <div className="mb-8 flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
+        <Input
+          label="Search companies"
+          type="search"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setPage(0)
+          }}
+          placeholder="Search by company name"
+          wrapperClassName="flex-1"
+        />
+        {query && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setQuery('')
+              setPage(0)
+            }}
+          >
+            Clear filters
           </Button>
         )}
-      </header>
-
-      <CompaniesList companies={companies} isLoading={isLoading} error={error} />
-
-      {addCompanyModal}
+      </div>
+      <CompanyResults
+        companies={companies}
+        result={result}
+        loading={isLoading}
+        error={error}
+        query={query}
+        retry={retry}
+        clear={() => {
+          setQuery('')
+          setPage(0)
+        }}
+        add={() => setAdding(true)}
+        setPage={setPage}
+      />
+      <AddCompanyModal open={adding} onClose={() => setAdding(false)} onSubmit={handleCreate} />
     </main>
-  )
-}
-
-export default function CompaniesPage() {
-  const { companies, isLoading, error, refresh } = useCompaniesData()
-  const [isAddCompanyModalOpen, setIsAddCompanyModalOpen] = useState(false)
-
-  async function handleCreateCompany(draft: CompanyDraft) {
-    await createCompany({
-      companyName: draft.companyName,
-      companyAddress: draft.companyAddress || null,
-      bio: draft.bio || null,
-      websiteUrl: draft.websiteUrl || null,
-    })
-    await refresh()
-    setIsAddCompanyModalOpen(false)
-  }
-
-  const addCompanyModal = (
-    <AddCompanyModal
-      open={isAddCompanyModalOpen}
-      onClose={() => setIsAddCompanyModalOpen(false)}
-      onSubmit={handleCreateCompany}
-    />
-  )
-
-  return (
-    <CompaniesContent
-      companies={companies}
-      isLoading={isLoading}
-      error={error}
-      openAddCompanyModal={() => setIsAddCompanyModalOpen(true)}
-      addCompanyModal={addCompanyModal}
-    />
   )
 }

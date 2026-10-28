@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -78,14 +80,23 @@ class NoteControllerTest {
     }
 
     @Test
-    void createNotePassesRequestToService() throws Exception {
+    void createNoteReturnsPersistedNoteAndAssociation() throws Exception {
         UUID applicationId = UUID.randomUUID();
+        UUID noteId = UUID.randomUUID();
+        when(service.addNewNote(argThat(request ->
+            applicationId.equals(request.jobApplicationId())
+                && "Follow up".equals(request.content())
+        ))).thenReturn(new NoteDTO(noteId, applicationId, "Follow up"));
+
         mockMvc.perform(post("/api/notes")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"jobApplicationId":"%s","content":"Follow up"}
                     """.formatted(applicationId)))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(noteId.toString()))
+            .andExpect(jsonPath("$.jobApplicationId").value(applicationId.toString()))
+            .andExpect(jsonPath("$.content").value("Follow up"));
 
         verify(service).addNewNote(argThat(request ->
             applicationId.equals(request.jobApplicationId())
@@ -104,5 +115,35 @@ class NoteControllerTest {
             .andExpect(jsonPath("$.error.details[*].field", hasItem("content")));
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void updateNoteReturnsUpdatedContentAndAssociation() throws Exception {
+        UUID noteId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        when(service.updateNoteById(eq(noteId), argThat(request ->
+            applicationId.equals(request.jobApplicationId())
+                && "Updated note".equals(request.content())
+        ))).thenReturn(new NoteDTO(noteId, applicationId, "Updated note"));
+
+        mockMvc.perform(put("/api/notes/{id}", noteId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"jobApplicationId":"%s","content":"Updated note"}
+                    """.formatted(applicationId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(noteId.toString()))
+            .andExpect(jsonPath("$.jobApplicationId").value(applicationId.toString()))
+            .andExpect(jsonPath("$.content").value("Updated note"));
+    }
+
+    @Test
+    void deleteNoteReturnsNoContent() throws Exception {
+        UUID noteId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/notes/{id}", noteId))
+            .andExpect(status().isNoContent());
+
+        verify(service).deleteNoteById(noteId);
     }
 }

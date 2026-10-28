@@ -1,8 +1,8 @@
 import { Link, NavLink } from 'react-router-dom'
 
 const navigationItems = [
-  { label: 'Dashboard', to: '/dashboard' },
   { label: 'Applications', to: '/applications' },
+  { label: 'Progress', to: '/dashboard' },
   { label: 'Companies', to: '/companies' },
   { label: 'Contacts', to: '/contacts' },
   { label: 'Interviews', to: '/interviews' },

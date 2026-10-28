@@ -111,18 +111,19 @@ public class FollowUpService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
     }
     
-    public void addNewFollowUp(FollowUpRequest request)throws ResourceNotFoundException{
+    public FollowUpDTO addNewFollowUp(FollowUpRequest request)throws ResourceNotFoundException{
         JobApplication application = jobApplicationRepository.findById(request.applicationId())
             .orElseThrow(() -> new ResourceNotFoundException(request.applicationId() + " not found."));
 
         FollowUp followUp = mapper.toEntityFollowUp(request, application);
 
-        repository.save(followUp);
+        FollowUp savedFollowUp = repository.save(followUp);
         log.info(
             "Created follow-up id={} applicationId={}",
             followUp.getId(),
             request.applicationId()
         );
+        return mapper.apply(savedFollowUp);
     }
 
     public FollowUpDTO updateFollowUpById(UUID id, FollowUpRequest request) throws ResourceNotFoundException{

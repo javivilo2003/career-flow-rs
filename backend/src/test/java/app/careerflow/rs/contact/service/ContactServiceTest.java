@@ -1,6 +1,8 @@
 package app.careerflow.rs.contact.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -61,12 +63,17 @@ class ContactServiceTest {
         Company company = Company.builder().id(companyId).build();
         ContactRequest request = new ContactRequest(companyId, "Ada", null, null, "CTO");
         Contact contact = Contact.builder().company(company).name("Ada").jobRole("CTO").build();
+        Contact saved = Contact.builder().id(UUID.randomUUID()).company(company).name("Ada").jobRole("CTO").build();
+        ContactDTO dto = new ContactDTO(saved.getId(), companyId, "Ada", null, null, "CTO");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
         when(mapper.toEntityContact(request, company)).thenReturn(contact);
+        when(repository.save(contact)).thenReturn(saved);
+        when(mapper.apply(saved)).thenReturn(dto);
 
-        service.addNewContact(request);
+        assertThat(service.addNewContact(request)).isSameAs(dto);
 
         verify(repository).save(contact);
+        verify(mapper).apply(saved);
     }
 
     @Test
@@ -95,8 +102,37 @@ class ContactServiceTest {
 
         service.updateContact(id, request);
 
+        assertThat(contact.getCompany()).isSameAs(company);
+        assertThat(contact.getName()).isEqualTo("Ada");
+        assertThat(contact.getPhone()).isEqualTo("123");
+        assertThat(contact.getEmail()).isEqualTo("ada@example.com");
+        assertThat(contact.getJobRole()).isEqualTo("CTO");
         verify(repository).save(contact);
         verify(mapper).apply(contact);
+    }
+
+    @Test
+    void multipleContactsMayShareTheSameJobRole() throws Exception {
+        UUID companyId = UUID.randomUUID();
+        Company company = Company.builder().id(companyId).build();
+        ContactRequest firstRequest = new ContactRequest(companyId, "Ada", null, null, "Recruiter");
+        ContactRequest secondRequest = new ContactRequest(companyId, "Grace", null, null, "Recruiter");
+        Contact first = Contact.builder().company(company).name("Ada").jobRole("Recruiter").build();
+        Contact second = Contact.builder().company(company).name("Grace").jobRole("Recruiter").build();
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(mapper.toEntityContact(firstRequest, company)).thenReturn(first);
+        when(mapper.toEntityContact(secondRequest, company)).thenReturn(second);
+        when(repository.save(first)).thenReturn(first);
+        when(repository.save(second)).thenReturn(second);
+        when(mapper.apply(any(Contact.class))).thenReturn(
+            new ContactDTO(UUID.randomUUID(), companyId, "contact", null, null, "Recruiter")
+        );
+
+        service.addNewContact(firstRequest);
+        service.addNewContact(secondRequest);
+
+        verify(repository).save(first);
+        verify(repository).save(second);
     }
 
     @Test

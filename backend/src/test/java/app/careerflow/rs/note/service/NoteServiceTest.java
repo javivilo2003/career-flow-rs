@@ -1,5 +1,6 @@
 package app.careerflow.rs.note.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,6 +21,7 @@ import app.careerflow.rs.common.exception.ResourceNotFoundException;
 import app.careerflow.rs.job_application.domain.JobApplication;
 import app.careerflow.rs.job_application.repository.JobApplicationRepository;
 import app.careerflow.rs.note.domain.Note;
+import app.careerflow.rs.note.dto.NoteDTO;
 import app.careerflow.rs.note.dto.NoteRequest;
 import app.careerflow.rs.note.mapper.NoteMapper;
 import app.careerflow.rs.note.repository.NoteRepository;
@@ -60,12 +62,17 @@ class NoteServiceTest {
         JobApplication application = JobApplication.builder().id(applicationId).build();
         NoteRequest request = new NoteRequest(applicationId, "Follow up");
         Note note = Note.builder().application(application).content("Follow up").build();
+        Note saved = Note.builder().id(UUID.randomUUID()).application(application).content("Follow up").build();
+        NoteDTO dto = new NoteDTO(saved.getId(), applicationId, "Follow up");
         when(jobApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
         when(mapper.toEntityNote(request, application)).thenReturn(note);
+        when(repository.save(note)).thenReturn(saved);
+        when(mapper.apply(saved)).thenReturn(dto);
 
-        service.addNewNote(request);
+        assertThat(service.addNewNote(request)).isSameAs(dto);
 
         verify(repository).save(note);
+        verify(mapper).apply(saved);
     }
 
     @Test
@@ -78,5 +85,34 @@ class NoteServiceTest {
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage(applicationId + " not found.");
         verifyNoInteractions(mapper, repository);
+    }
+
+    @Test
+    void updateNoteCanChangeApplicationAssociationAndContent() throws Exception {
+        UUID noteId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        JobApplication application = JobApplication.builder().id(applicationId).build();
+        Note note = Note.builder().id(noteId).content("Old").build();
+        NoteRequest request = new NoteRequest(applicationId, "Updated");
+        NoteDTO dto = new NoteDTO(noteId, applicationId, "Updated");
+        when(repository.findById(noteId)).thenReturn(Optional.of(note));
+        when(jobApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(mapper.apply(note)).thenReturn(dto);
+
+        assertThat(service.updateNoteById(noteId, request)).isSameAs(dto);
+        assertThat(note.getApplication()).isSameAs(application);
+        assertThat(note.getContent()).isEqualTo("Updated");
+        verify(repository).save(note);
+    }
+
+    @Test
+    void deleteNoteDeletesOnlyTheResolvedNote() throws Exception {
+        UUID noteId = UUID.randomUUID();
+        Note note = Note.builder().id(noteId).build();
+        when(repository.findById(noteId)).thenReturn(Optional.of(note));
+
+        service.deleteNoteById(noteId);
+
+        verify(repository).delete(note);
     }
 }

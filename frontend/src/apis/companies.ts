@@ -44,7 +44,7 @@ export async function getCompany(id: string): Promise<Company> {
   const response = await fetch(`/api/companies/${encodeURIComponent(id)}`)
 
   if (!response.ok) {
-    throw new Error('Could not load the company.')
+    throw await companyError(response, 'Could not load the company.')
   }
 
   return response.json() as Promise<Company>
@@ -53,12 +53,19 @@ export async function getCompany(id: string): Promise<Company> {
 export class CompanyApiError extends Error {
   readonly status: number
   readonly code?: ApiErrorResponse['error']['code']
+  readonly details: NonNullable<ApiErrorResponse['error']['details']>
 
-  constructor(message: string, status: number, code?: ApiErrorResponse['error']['code']) {
+  constructor(
+    message: string,
+    status: number,
+    code?: ApiErrorResponse['error']['code'],
+    details: NonNullable<ApiErrorResponse['error']['details']> = [],
+  ) {
     super(message)
     this.name = 'CompanyApiError'
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
@@ -74,6 +81,7 @@ async function companyError(response: Response, fallback: string) {
     payload?.error.message || fallback,
     response.status,
     payload?.error.code,
+    payload?.error.details,
   )
 }
 
@@ -88,6 +96,20 @@ export async function createCompany(company: CompanyRequest): Promise<Company> {
 
   if (!response.ok) {
     throw await companyError(response, 'Could not create the company.')
+  }
+
+  return response.json() as Promise<Company>
+}
+
+export async function updateCompany(id: string, company: CompanyRequest): Promise<Company> {
+  const response = await fetch(`/api/companies/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(company),
+  })
+
+  if (!response.ok) {
+    throw await companyError(response, 'Could not update the company.')
   }
 
   return response.json() as Promise<Company>

@@ -1,58 +1,54 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { getCompany } from '../../apis/companies'
 import { getContact } from '../../apis/contacts'
 import type { Company, Contact } from '../../types/api'
 
-type ContactDetails = {
-  contact: Contact
-  company: Company
-}
+export type ContactDetails = { contact: Contact; company: Company }
 
-type ContactDetailsState = {
-  details: ContactDetails | null
-  isLoading: boolean
-  error: string | null
-}
-
-export default function useContactDetails(contactId: string | undefined): ContactDetailsState {
+export default function useContactDetails(contactId: string | undefined) {
   const [details, setDetails] = useState<ContactDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [revision, setRevision] = useState(0)
+  const retry = useCallback(() => setRevision((value) => value + 1), [])
 
   useEffect(() => {
-    let isCancelled = false
-
-    async function load() {
-      if (!contactId) {
-        setError('Contact not found.')
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const contact = await getContact(contactId)
-        const company = await getCompany(contact.companyId)
-        if (!isCancelled) {
-          setDetails({ contact, company })
-          setError(null)
+    let cancelled = false
+    if (!contactId) {
+      return
+    }
+    void getContact(contactId)
+      .then(async (contact) => ({ contact, company: await getCompany(contact.companyId) }))
+      .then((value) => {
+        if (!cancelled) {
+          setDetails(value)
         }
-      } catch (requestError) {
-        if (!isCancelled) {
-          setError(requestError instanceof Error ? requestError.message : 'Could not load contact.')
+      })
+      .catch((reason) => {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : 'Could not load contact.')
         }
-      } finally {
-        if (!isCancelled) {
+      })
+      .finally(() => {
+        if (!cancelled) {
           setIsLoading(false)
         }
-      }
-    }
-
-    void load()
+      })
     return () => {
-      isCancelled = true
+      cancelled = true
     }
-  }, [contactId])
+  }, [contactId, revision])
 
-  return { details, isLoading, error }
+  const synchronize = useCallback(
+    (contact: Contact, company: Company) => setDetails({ contact, company }),
+    [],
+  )
+  return {
+    details,
+    isLoading: contactId ? isLoading : false,
+    error: contactId ? error : 'Contact not found.',
+    retry,
+    synchronize,
+  }
 }

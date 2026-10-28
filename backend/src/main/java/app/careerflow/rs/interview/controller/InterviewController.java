@@ -53,8 +53,10 @@ public class InterviewController {
     }
 
     @PostMapping
-    public void addNewInterview(@Valid @RequestBody InterviewRequest interview) throws ResourceNotFoundException{
-        service.addNewInterview(interview);
+    public InterviewDTO addNewInterview(
+        @Valid @RequestBody InterviewRequest interview
+    ) throws ResourceNotFoundException {
+        return service.addNewInterview(interview);
     }
 
     @ResponseStatus(HttpStatus.OK)

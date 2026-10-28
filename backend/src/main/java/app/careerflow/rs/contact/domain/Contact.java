@@ -3,7 +3,6 @@ package app.careerflow.rs.contact.domain;
 import java.util.UUID;
 
 import app.careerflow.rs.company.domain.Company;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,7 +44,6 @@ public class Contact {
     private String email;
 
     @NotNull
-    @Column(unique = true)
     private String jobRole;
 
 }

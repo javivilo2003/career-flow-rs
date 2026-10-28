@@ -55,8 +55,8 @@ public class FollowUpController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping()
-    public void addNewFollowUp(@Valid @RequestBody FollowUpRequest request) throws ResourceNotFoundException{
-        service.addNewFollowUp(request);
+    public FollowUpDTO addNewFollowUp(@Valid @RequestBody FollowUpRequest request) throws ResourceNotFoundException{
+        return service.addNewFollowUp(request);
     }
 
     @ResponseStatus(HttpStatus.OK)

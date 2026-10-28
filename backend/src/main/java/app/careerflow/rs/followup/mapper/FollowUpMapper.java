@@ -15,6 +15,7 @@ public class FollowUpMapper implements Function<FollowUp, FollowUpDTO>{
     @Override
     public FollowUpDTO apply(FollowUp t) {
         return new FollowUpDTO(
+            t.getId(),
             t.getApplication().getId(),
             t.getTitle(),
             t.getDueDate(),

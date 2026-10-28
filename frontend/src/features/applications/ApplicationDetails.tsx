@@ -5,12 +5,17 @@ import ApplicationCard from '../../components/ApplicationCard'
 import Button from '../../components/Button'
 import Icon from '../../components/Icon'
 import type { ApplicationStatus, Company, JobApplication } from '../../types/api'
+import ApplicationFollowUpsSection from '../followups/ApplicationFollowUpsSection'
+import ApplicationInterviewsSection from '../interviews/ApplicationInterviewsSection'
+import CompanyContactsSection from '../interviews/CompanyContactsSection'
+import ApplicationNotesSection from '../notes/ApplicationNotesSection'
 import useApplicationDetails from './useApplicationDetails'
 
 export type ApplicationDetailsContentProps = {
   application: JobApplication
   company: Company
   companyHref?: string
+  onAttentionChanged?: () => void
   onEdit?: (application: JobApplication, company?: Company) => void
   onDelete?: (application: JobApplication) => void
   onStatusChange?: (
@@ -26,6 +31,7 @@ export function ApplicationDetailsContent({
   onEdit,
   onDelete,
   onStatusChange,
+  onAttentionChanged,
 }: ApplicationDetailsContentProps) {
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,410px)_minmax(0,1fr)]">
@@ -82,6 +88,16 @@ export function ApplicationDetailsContent({
             View company
           </Link>
         </section>
+        <CompanyContactsSection company={company} />
+        <ApplicationNotesSection applicationId={application.id} />
+        <ApplicationInterviewsSection
+          applicationId={application.id}
+          onAttentionChanged={onAttentionChanged}
+        />
+        <ApplicationFollowUpsSection
+          applicationId={application.id}
+          onAttentionChanged={onAttentionChanged}
+        />
       </div>
     </div>
   )

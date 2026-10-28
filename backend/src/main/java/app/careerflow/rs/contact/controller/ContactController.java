@@ -53,8 +53,10 @@ public class ContactController {
     }
 
     @PostMapping
-    public void addNewContact(@Valid @RequestBody ContactRequest request)throws ResourceNotFoundException{
-        service.addNewContact(request);
+    public ContactDTO addNewContact(
+        @Valid @RequestBody ContactRequest request
+    ) throws ResourceNotFoundException {
+        return service.addNewContact(request);
     }
 
     @ResponseStatus(HttpStatus.OK)

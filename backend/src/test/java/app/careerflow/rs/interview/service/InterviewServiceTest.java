@@ -66,12 +66,25 @@ class InterviewServiceTest {
             applicationId, "Technical", InterviewStatus.SCHEDULED, LocalDate.now(), null
         );
         Interview interview = Interview.builder().jobApplication(application).build();
+        Interview saved = Interview.builder()
+            .id(UUID.randomUUID())
+            .jobApplication(application)
+            .stage(request.stage())
+            .status(request.status())
+            .interviewDate(request.interviewDate())
+            .build();
+        InterviewDTO dto = new InterviewDTO(
+            saved.getId(), applicationId, request.stage(), request.status(), request.interviewDate(), null
+        );
         when(jobApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
         when(mapper.toEntityInterview(request, application)).thenReturn(interview);
+        when(repository.save(interview)).thenReturn(saved);
+        when(mapper.apply(saved)).thenReturn(dto);
 
-        service.addNewInterview(request);
+        assertThat(service.addNewInterview(request)).isSameAs(dto);
 
         verify(repository).save(interview);
+        verify(mapper).apply(saved);
     }
 
     @Test
@@ -105,6 +118,11 @@ class InterviewServiceTest {
         when(mapper.apply(interview)).thenReturn(dto);
 
         assertThat(service.updateInterview(id, request)).isSameAs(dto);
+        assertThat(interview.getJobApplication()).isSameAs(application);
+        assertThat(interview.getStage()).isEqualTo("Technical");
+        assertThat(interview.getStatus()).isEqualTo(InterviewStatus.RESCHEDULED);
+        assertThat(interview.getInterviewDate()).isEqualTo(request.interviewDate());
+        assertThat(interview.getNotes()).isEqualTo("Review API design");
         verify(repository).save(interview);
     }
 

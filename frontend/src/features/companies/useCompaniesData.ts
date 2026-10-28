@@ -1,55 +1,44 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { getCompanies } from '../../apis/companies'
-import { loadAllPages } from '../../apis/pagination'
-import type { Company } from '../../types/api'
+import type { Company, Page } from '../../types/api'
 
-export type CompaniesDataState = {
-  companies: Company[]
-  isLoading: boolean
-  error: string | null
-  refresh: () => Promise<void>
-}
-
-export default function useCompaniesData(): CompaniesDataState {
-  const [companies, setCompanies] = useState<Company[]>([])
+export default function useCompaniesData(query: string, page: number, size = 12) {
+  const [result, setResult] = useState<Page<Company> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [revision, setRevision] = useState(0)
+  const request = useRef(0)
 
-  const refresh = useCallback(async () => {
-    const loadedCompanies = await loadAllPages((page) => getCompanies({ page, size: 100 }))
-    setCompanies(loadedCompanies)
-    setError(null)
-  }, [])
+  const refresh = useCallback(() => setRevision((value) => value + 1), [])
 
   useEffect(() => {
-    let isCancelled = false
+    const requestId = ++request.current
+    const timer = window.setTimeout(
+      () => {
+        setIsLoading(true)
+        setError(null)
+        void getCompanies({ companyName: query, page, size, sort: 'companyName', direction: 'ASC' })
+          .then((data) => {
+            if (request.current === requestId) {
+              setResult(data)
+            }
+          })
+          .catch((reason) => {
+            if (request.current === requestId) {
+              setError(reason instanceof Error ? reason.message : 'Could not load companies.')
+            }
+          })
+          .finally(() => {
+            if (request.current === requestId) {
+              setIsLoading(false)
+            }
+          })
+      },
+      query ? 250 : 0,
+    )
+    return () => window.clearTimeout(timer)
+  }, [page, query, revision, size])
 
-    async function loadCompanies() {
-      try {
-        const loadedCompanies = await loadAllPages((page) => getCompanies({ page, size: 100 }))
-        if (!isCancelled) {
-          setCompanies(loadedCompanies)
-          setError(null)
-        }
-      } catch (requestError) {
-        if (!isCancelled) {
-          setError(
-            requestError instanceof Error ? requestError.message : 'Could not load companies.',
-          )
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void loadCompanies()
-    return () => {
-      isCancelled = true
-    }
-  }, [])
-
-  return { companies, isLoading, error, refresh }
+  return { result, companies: result?.content ?? [], isLoading, error, retry: refresh, refresh }
 }

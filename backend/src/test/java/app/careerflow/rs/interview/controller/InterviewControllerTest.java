@@ -47,7 +47,10 @@ class InterviewControllerTest {
         UUID applicationId = UUID.randomUUID();
         when(service.getInterviews(
             argThat(filter -> applicationId.equals(filter.jobApplicationId())
-                && filter.status() == InterviewStatus.SCHEDULED),
+                && "Technical".equals(filter.stage())
+                && filter.status() == InterviewStatus.SCHEDULED
+                && LocalDate.of(2026, 10, 1).equals(filter.interviewDateFrom())
+                && LocalDate.of(2026, 10, 31).equals(filter.interviewDateTo())),
             eq(0), eq(5), eq("interviewDate"), eq(Sort.Direction.ASC)
         )).thenReturn(new PageImpl<>(List.of(new InterviewDTO(
                 id, applicationId, "Technical", InterviewStatus.SCHEDULED,
@@ -59,16 +62,23 @@ class InterviewControllerTest {
 
         mockMvc.perform(get("/api/interviews")
                 .param("jobApplicationId", applicationId.toString())
+                .param("stage", "Technical")
                 .param("status", "SCHEDULED")
+                .param("interviewDateFrom", "2026-10-01")
+                .param("interviewDateTo", "2026-10-31")
                 .param("size", "5"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.content[0].id").value(id.toString()))
             .andExpect(jsonPath("$.content[0].status").value("SCHEDULED"))
+            .andExpect(jsonPath("$.content[0].interviewDate").value("2026-10-02"))
             .andExpect(jsonPath("$.size").value(5));
 
         verify(service).getInterviews(
             argThat(filter -> applicationId.equals(filter.jobApplicationId())
-                && filter.status() == InterviewStatus.SCHEDULED),
+                && "Technical".equals(filter.stage())
+                && filter.status() == InterviewStatus.SCHEDULED
+                && LocalDate.of(2026, 10, 1).equals(filter.interviewDateFrom())
+                && LocalDate.of(2026, 10, 31).equals(filter.interviewDateTo())),
             eq(0), eq(5), eq("interviewDate"), eq(Sort.Direction.ASC)
         );
     }
@@ -84,14 +94,27 @@ class InterviewControllerTest {
     }
 
     @Test
-    void createInterviewPassesRequestToService() throws Exception {
+    void createInterviewReturnsPersistedInterviewWithDateOnlyValue() throws Exception {
         UUID applicationId = UUID.randomUUID();
+        UUID interviewId = UUID.randomUUID();
+        when(service.addNewInterview(argThat(request ->
+            applicationId.equals(request.jobApplicationId())
+                && request.status() == InterviewStatus.SCHEDULED
+        ))).thenReturn(new InterviewDTO(
+            interviewId, applicationId, "Technical", InterviewStatus.SCHEDULED,
+            LocalDate.of(2026, 10, 2), null
+        ));
+
         mockMvc.perform(post("/api/interviews")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"jobApplicationId":"%s","stage":"Technical","status":"SCHEDULED","interviewDate":"2026-10-02"}
                     """.formatted(applicationId)))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(interviewId.toString()))
+            .andExpect(jsonPath("$.jobApplicationId").value(applicationId.toString()))
+            .andExpect(jsonPath("$.interviewDate").value("2026-10-02"))
+            .andExpect(jsonPath("$.status").value("SCHEDULED"));
 
         verify(service).addNewInterview(argThat(request ->
             applicationId.equals(request.jobApplicationId())

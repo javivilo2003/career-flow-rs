@@ -23,6 +23,7 @@ import EmptyApplications from '../features/applications/EmptyApplications'
 import useApplicationsData, {
   type ApplicationsDataState,
 } from '../features/applications/useApplicationsData'
+import { ApplicationsAttention } from '../features/followups'
 import {
   APPLICATION_STATUSES,
   type ApplicationStatus,
@@ -315,9 +316,36 @@ function ApplicationDeleteDialog({
   )
 }
 
+function WorkspaceAttention({
+  searchParams,
+  revision,
+}: {
+  searchParams: URLSearchParams
+  revision: number
+}) {
+  const navigate = useNavigate()
+  const openItem = useCallback(
+    (id: string, section?: 'followups' | 'interviews') => {
+      const detailsHref = applicationDetailsHref(id, searchParams)
+      void navigate(`${detailsHref}${section ? `#${section}` : ''}`, {
+        state: { applicationListOrigin: applicationsHref(searchParams) },
+      })
+    },
+    [navigate, searchParams],
+  )
+  return (
+    <div className="mb-8">
+      <ApplicationsAttention onOpenApplication={openItem} revision={revision} />
+    </div>
+  )
+}
+
+function useProvisionalApplicationFilters() {
+  return parseApplicationUrlState(useLocation().search)
+}
+
 export default function ApplicationsPage() {
-  const provisionalFilters = parseApplicationUrlState(useLocation().search)
-  const data = useApplicationsData({ filters: provisionalFilters })
+  const data = useApplicationsData({ filters: useProvisionalApplicationFilters() })
   const url = useApplicationUrlState(data)
   const navigate = useNavigate()
   const location = useLocation()
@@ -327,10 +355,10 @@ export default function ApplicationsPage() {
   const [deleting, setDeleting] = useState<JobApplication | null>(null)
   const [notice, setNotice] = useState<Notice>(null)
   const [detailsRevision, setDetailsRevision] = useState(0)
+  const [attentionRevision, setAttentionRevision] = useState(0)
   const beginEdit = useCallback((application: JobApplication, company?: Company) => {
     setEditing({ application, company })
   }, [])
-
   const clearFilters = useCallback(() => {
     url.update({ position: '', companyId: '', sort: 'createdAt', direction: 'DESC' })
   }, [url])
@@ -362,7 +390,6 @@ export default function ApplicationsPage() {
     }),
     [beginEdit, changeStatus, openDetails],
   )
-
   async function createApplication(draft: ApplicationDraft) {
     const created = await createApplicationFromDraft(draft)
     const destination = creationDestination(url.filters, created.status)
@@ -391,7 +418,6 @@ export default function ApplicationsPage() {
       void navigate(applicationsHref(url.searchParams), { replace: true })
     }
   }
-
   const addModal = (
     <AddApplicationModal
       open={adding}
@@ -412,6 +438,7 @@ export default function ApplicationsPage() {
   return (
     <main className="p-6 text-left sm:p-12">
       <WorkspaceHeader onAdd={() => setAdding(true)} disabled={Boolean(data.error)} />
+      <WorkspaceAttention searchParams={url.searchParams} revision={attentionRevision} />
       <ApplicationsFilters
         value={url.filters}
         selectedCompanyName={data.companyNames.get(url.filters.companyId)}
@@ -444,6 +471,7 @@ export default function ApplicationsPage() {
           await data.applicationUpdated(updated)
           setEditing(null)
           setDetailsRevision((revision) => revision + 1)
+          setAttentionRevision((revision) => revision + 1)
           setNotice({ message: 'Application updated.' })
         }}
       />
@@ -461,6 +489,7 @@ export default function ApplicationsPage() {
         onEdit={beginEdit}
         onDelete={setDeleting}
         onStatusChange={changeStatus}
+        onAttentionChanged={() => setAttentionRevision((revision) => revision + 1)}
       />
     </main>
   )

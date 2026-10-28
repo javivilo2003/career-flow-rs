@@ -17,14 +17,16 @@ class FollowUpMapperTest {
 
     @Test
     void mapsEntityToDto() {
+        UUID followUpId = UUID.randomUUID();
         UUID applicationId = UUID.randomUUID();
         LocalDate dueDate = LocalDate.of(2026, 10, 1);
         JobApplication application = JobApplication.builder().id(applicationId).build();
-        FollowUp followUp = FollowUp.builder().application(application)
+        FollowUp followUp = FollowUp.builder().id(followUpId).application(application)
             .title("Send email").dueDate(dueDate).completed(true).build();
 
         var dto = mapper.apply(followUp);
 
+        assertThat(dto.id()).isEqualTo(followUpId);
         assertThat(dto.applicationId()).isEqualTo(applicationId);
         assertThat(dto.title()).isEqualTo("Send email");
         assertThat(dto.dueDate()).isEqualTo(dueDate);

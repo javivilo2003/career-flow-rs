@@ -114,14 +114,15 @@ public class ContactService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
     }
 
-    public void addNewContact(ContactRequest request) throws ResourceNotFoundException {
+    public ContactDTO addNewContact(ContactRequest request) throws ResourceNotFoundException {
         Company company = companyRepository.findById(request.companyId())
             .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
 
         Contact contact = mapper.toEntityContact(request, company);
 
-        repository.save(contact);
-        log.info("Created contact id={} companyId={}", contact.getId(), request.companyId());
+        Contact savedContact = repository.save(contact);
+        log.info("Created contact id={} companyId={}", savedContact.getId(), request.companyId());
+        return mapper.apply(savedContact);
     }
 
     public ContactDTO updateContact(UUID id, ContactRequest request) throws ResourceNotFoundException {

@@ -107,17 +107,18 @@ public class NoteService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
     }
 
-    public void addNewNote(NoteRequest request) throws ResourceNotFoundException{
+    public NoteDTO addNewNote(NoteRequest request) throws ResourceNotFoundException{
         JobApplication application = jobApplicationRepository.findById(request.jobApplicationId())
             .orElseThrow(() -> new ResourceNotFoundException(request.jobApplicationId() + " not found."));
 
         Note note = mapper.toEntityNote(request, application);
-        repository.save(note);
+        Note savedNote = repository.save(note);
         log.info(
             "Created note id={} applicationId={}",
-            note.getId(),
+            savedNote.getId(),
             request.jobApplicationId()
         );
+        return mapper.apply(savedNote);
     }
     
     public NoteDTO updateNoteById(UUID id, NoteRequest request) throws ResourceNotFoundException{

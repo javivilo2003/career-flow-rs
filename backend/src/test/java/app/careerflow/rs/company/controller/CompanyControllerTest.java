@@ -88,7 +88,17 @@ class CompanyControllerTest {
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(id.toString()))
-            .andExpect(jsonPath("$.companyName").value("Updated"));
+            .andExpect(jsonPath("$.companyName").value("Updated"))
+            .andExpect(jsonPath("$.companyAddress").value("Madrid"))
+            .andExpect(jsonPath("$.bio").value("Bio"))
+            .andExpect(jsonPath("$.websiteUrl").value("https://example.com"));
+
+        verify(service).updateCompany(eq(id), argThat(request ->
+            "Updated".equals(request.companyName())
+                && "Madrid".equals(request.companyAddress())
+                && "Bio".equals(request.bio())
+                && "https://example.com".equals(request.websiteUrl())
+        ));
     }
 
     @Test

@@ -13,7 +13,6 @@ import Textarea from './Textarea'
 
 export type ApplicationDraftStatus =
   'Saved' | 'Preparing' | 'Applied' | 'Interview' | 'Offer' | 'Rejected' | 'Withdrawn'
-
 export type ApplicationDraft = {
   role: string
   companyId: string
@@ -37,14 +36,13 @@ export type AddApplicationFormProps = {
   error?: string
   titleId?: string
   children?: ReactNode
-  /** Existing companies can seed the first render while a remote search is pending. */
   companies?: readonly Company[]
-  /** Kept for callers that already provide select options. Prefer `companies`. */
   companyOptions?: readonly SelectOption[]
   onSearchCompanies?: SearchCompanies
   onCreateCompany?: (request: CompanyRequest) => Promise<Company>
   onCompanySelected?: (company: Company) => void
   onCompanyCreated?: (company: Company) => void
+  fixedCompany?: Company
 }
 const statuses: ApplicationDraftStatus[] = [
   'Saved',
@@ -56,7 +54,6 @@ const statuses: ApplicationDraftStatus[] = [
   'Withdrawn',
 ]
 const noCompanyOptions: readonly SelectOption[] = []
-
 function applicationDraft(initialValues?: Partial<ApplicationDraft>): ApplicationDraft {
   return {
     role: '',
@@ -219,7 +216,6 @@ function OptionalApplicationFields({ values, errors, update }: ApplicationFields
           value={values.jobType}
           onChange={(e) => update('jobType', e.target.value)}
           placeholder="Ex: Full-time"
-          error={errors.jobType}
           wrapperClassName="min-h-[99px]"
         />
         <Input
@@ -371,6 +367,7 @@ function ApplicationFormState({
   onCreateCompany,
   onCompanySelected,
   onCompanyCreated,
+  fixedCompany,
 }: ApplicationFormStateProps) {
   const generatedId = useId()
   const optionalDetailsId = `${generatedId}-optional-details`
@@ -383,8 +380,8 @@ function ApplicationFormState({
     hasOptionalDetails(initialDraft),
   )
   const initialCompanies = useMemo<Company[]>(
-    () => companySeeds(suppliedCompanies, companyOptions),
-    [companyOptions, suppliedCompanies],
+    () => (fixedCompany ? [fixedCompany] : companySeeds(suppliedCompanies, companyOptions)),
+    [companyOptions, fixedCompany, suppliedCompanies],
   )
   const initiallySelected = initialCompanies.find((company) => company.id === values.companyId)
   const pending = busy || submitting
@@ -460,10 +457,10 @@ function ApplicationFormState({
                   selectedCompanyId={values.companyId}
                   selectedCompanyName={initiallySelected?.companyName}
                   error={errors.companyId}
-                  disabled={pending}
+                  disabled={pending || Boolean(fixedCompany)}
                   searchCompanies={onSearchCompanies}
                   createCompany={onCreateCompany}
-                  enableInlineCompanyCreation={enableInlineCompanyCreation}
+                  enableInlineCompanyCreation={enableInlineCompanyCreation && !fixedCompany}
                   onChange={(company) => update('companyId', company?.id ?? '')}
                   onCompanySelected={onCompanySelected}
                   onCompanyCreated={onCompanyCreated}

@@ -55,8 +55,10 @@ public class NoteController {
 
     @ResponseStatus(HttpStatus.CREATED) 
     @PostMapping()
-    public void addNewNote(@Valid @RequestBody NoteRequest request) throws ResourceNotFoundException{
-        service.addNewNote(request);
+    public NoteDTO addNewNote(
+        @Valid @RequestBody NoteRequest request
+    ) throws ResourceNotFoundException {
+        return service.addNewNote(request);
     }
 
     @PutMapping("{id}")

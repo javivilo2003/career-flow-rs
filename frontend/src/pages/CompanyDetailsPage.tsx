@@ -1,15 +1,30 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import ApplicationCard from '../components/ApplicationCard'
-import ContactCard from '../components/ContactCard'
-import PageStatus from '../components/PageStatus'
+import { updateCompany } from '../apis/companies'
+import { createContact } from '../apis/contacts'
+import AddApplicationModal, { type ApplicationDraft } from '../components/AddApplicationModal'
+import AddCompanyModal, { type CompanyDraft } from '../components/AddCompanyModal'
+import Button from '../components/Button'
+import { createApplicationFromDraft } from '../features/applications/createApplicationFromDraft'
+import {
+  CompanyApplicationsSection,
+  CompanyContactsSection,
+  CompanyPrimaryStatus,
+} from '../features/companies/CompanyDetailSections'
 import useCompanyDetails from '../features/companies/useCompanyDetails'
-import type { Company, Contact, JobApplication } from '../types/api'
+import ContactModal from '../features/contacts/ContactModal'
+import type { Company } from '../types/api'
 
-function CompanyInformation({ company }: { company: Company }) {
+function CompanyInformation({ company, onEdit }: { company: Company; onEdit: () => void }) {
   return (
     <section className="rounded-[24px] bg-surface p-6">
-      <h2 className="m-0 text-2xl font-bold text-heading">Company information</h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="m-0 text-2xl font-bold text-heading">Company information</h2>
+        <Button variant="secondary" onClick={onEdit}>
+          Edit company
+        </Button>
+      </div>
       <dl className="mt-6 grid grid-auto-details gap-6">
         <div>
           <dt className="text-sm text-body">Location</dt>
@@ -23,7 +38,7 @@ function CompanyInformation({ company }: { company: Company }) {
                 href={company.websiteUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="font-semibold text-heading underline decoration-border underline-offset-4"
+                className="font-semibold text-heading underline underline-offset-4"
               >
                 {company.websiteUrl}
               </a>
@@ -41,85 +56,142 @@ function CompanyInformation({ company }: { company: Company }) {
   )
 }
 
-function CompanyApplications({
-  applications,
-  companyName,
-}: {
-  applications: JobApplication[]
-  companyName: string
-}) {
-  return (
-    <section>
-      <h2 className="m-0 mb-5 text-2xl font-bold text-heading">Applications</h2>
-      {applications.length === 0 ? (
-        <p className="m-0 rounded-[24px] bg-surface p-6">No applications for this company.</p>
-      ) : (
-        <ul className="m-0 grid list-none gap-4 p-0">
-          {applications.map((application) => (
-            <li key={application.id}>
-              <ApplicationCard
-                application={application}
-                companyName={companyName}
-                applicationHref={`/applications/${application.id}`}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
+function optional(value: string) {
+  return value || null
 }
 
-function CompanyContacts({ contacts, companyName }: { contacts: Contact[]; companyName: string }) {
+function CompanyHeaderActions({
+  company,
+  addContact,
+  addApplication,
+}: {
+  company: Company | null
+  addContact: () => void
+  addApplication: () => void
+}) {
+  if (!company) {
+    return null
+  }
   return (
-    <section>
-      <h2 className="m-0 mb-5 text-2xl font-bold text-heading">Contacts</h2>
-      {contacts.length === 0 ? (
-        <p className="m-0 rounded-[24px] bg-surface p-6">No contacts for this company.</p>
-      ) : (
-        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(410px,100%),410px))] gap-6 p-0">
-          {contacts.map((contact) => (
-            <li key={contact.id} className="min-w-0">
-              <ContactCard
-                contact={contact}
-                companyName={companyName}
-                detailsPath={`/contacts/${contact.id}`}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div className="flex flex-wrap gap-3">
+      <Button variant="secondary" onClick={addContact}>
+        Add contact
+      </Button>
+      <Button onClick={addApplication}>Add application</Button>
+    </div>
   )
 }
 
 export default function CompanyDetailsPage() {
   const { companyId } = useParams()
-  const { details, isLoading, error } = useCompanyDetails(companyId)
+  const [applicationPage, setApplicationPage] = useState(0)
+  const [contactPage, setContactPage] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [addingApplication, setAddingApplication] = useState(false)
+  const [addingContact, setAddingContact] = useState(false)
+  const state = useCompanyDetails(companyId, applicationPage, contactPage)
+  const company = state.company.data
+
+  async function saveCompany(draft: CompanyDraft) {
+    if (!company) {
+      return
+    }
+    const saved = await updateCompany(company.id, {
+      companyName: draft.companyName,
+      companyAddress: optional(draft.companyAddress),
+      bio: optional(draft.bio),
+      websiteUrl: optional(draft.websiteUrl),
+    })
+    state.synchronizeCompany(saved)
+    setEditing(false)
+  }
+  async function saveApplication(draft: ApplicationDraft) {
+    await createApplicationFromDraft(draft)
+    setAddingApplication(false)
+    setApplicationPage(0)
+    state.refreshApplications()
+  }
 
   return (
     <main className="p-6 text-left sm:p-12">
       <Link to="/companies" className="text-sm font-semibold text-secondary hover:text-heading">
         ← Back to companies
       </Link>
-      <header className="mt-8 mb-8">
-        <p className="m-0 font-bold text-accent">Company</p>
-        <h1 className="m-0 mt-8 font-heading text-5xl font-medium text-heading">
-          {details?.company.companyName ?? 'Company details'}
-        </h1>
-      </header>
-
-      <PageStatus loading={isLoading} loadingLabel="Loading company details" error={error} />
-
-      {details && (
-        <div className="flex flex-col gap-10">
-          <CompanyInformation company={details.company} />
-          <CompanyApplications
-            applications={details.applications}
-            companyName={details.company.companyName}
-          />
-          <CompanyContacts contacts={details.contacts} companyName={details.company.companyName} />
+      <header className="mt-8 mb-8 flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="m-0 font-bold text-accent">Company</p>
+          <h1 className="m-0 mt-8 font-heading text-5xl font-medium text-heading">
+            {company?.companyName ?? 'Company details'}
+          </h1>
         </div>
+        <CompanyHeaderActions
+          company={company}
+          addContact={() => setAddingContact(true)}
+          addApplication={() => setAddingApplication(true)}
+        />
+      </header>
+      <div className="flex flex-col gap-10">
+        <CompanyPrimaryStatus section={state.company} retry={state.retryCompany} />
+        {company && <CompanyInformation company={company} onEdit={() => setEditing(true)} />}
+        <CompanyApplicationsSection
+          section={state.applications}
+          company={company ?? undefined}
+          retry={state.retryApplications}
+          add={() => setAddingApplication(true)}
+          setPage={setApplicationPage}
+        />
+        <CompanyContactsSection
+          section={state.contacts}
+          company={company ?? undefined}
+          companyId={companyId}
+          retry={state.retryContacts}
+          add={() => setAddingContact(true)}
+          setPage={setContactPage}
+        />
+      </div>
+      {company && (
+        <>
+          <AddCompanyModal
+            key={[
+              company.id,
+              company.companyName,
+              company.companyAddress,
+              company.bio,
+              company.websiteUrl,
+            ].join(':')}
+            open={editing}
+            onClose={() => setEditing(false)}
+            onSubmit={saveCompany}
+            title="Edit company"
+            submitLabel="Save changes"
+            initialValues={{
+              companyName: company.companyName,
+              companyAddress: company.companyAddress ?? '',
+              bio: company.bio ?? '',
+              websiteUrl: company.websiteUrl ?? '',
+            }}
+          />
+          <AddApplicationModal
+            open={addingApplication}
+            onClose={() => setAddingApplication(false)}
+            onSubmit={saveApplication}
+            initialValues={{ companyId: company.id }}
+            companies={[company]}
+            fixedCompany={company}
+            title={`Add application for ${company.companyName}`}
+          />
+          <ContactModal
+            open={addingContact}
+            onClose={() => setAddingContact(false)}
+            fixedCompany={company}
+            onSubmit={async (request) => {
+              await createContact(request)
+              setAddingContact(false)
+              setContactPage(0)
+              state.refreshContacts()
+            }}
+          />
+        </>
       )}
     </main>
   )

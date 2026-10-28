@@ -1,56 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getCompanies } from '../../apis/companies'
 import { getContacts } from '../../apis/contacts'
-import { loadAllPages } from '../../apis/pagination'
-import type { Contact } from '../../types/api'
+import type { Contact, Page } from '../../types/api'
 
-type ContactsDataState = {
-  contacts: Contact[]
-  companyNames: Map<string, string>
-  isLoading: boolean
-  error: string | null
-}
-
-export default function useContactsData(): ContactsDataState {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [companyNames, setCompanyNames] = useState<Map<string, string>>(new Map())
+export default function useContactsData(name: string, companyId: string, page: number, size = 12) {
+  const [result, setResult] = useState<Page<Contact> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [revision, setRevision] = useState(0)
+  const request = useRef(0)
 
   useEffect(() => {
-    let isCancelled = false
+    const requestId = ++request.current
+    const timer = window.setTimeout(
+      () => {
+        setIsLoading(true)
+        setError(null)
+        void getContacts({ name, companyId: companyId || undefined, page, size })
+          .then((data) => {
+            if (request.current === requestId) {
+              setResult(data)
+            }
+          })
+          .catch((reason) => {
+            if (request.current === requestId) {
+              setError(reason instanceof Error ? reason.message : 'Could not load contacts.')
+            }
+          })
+          .finally(() => {
+            if (request.current === requestId) {
+              setIsLoading(false)
+            }
+          })
+      },
+      name ? 250 : 0,
+    )
+    return () => window.clearTimeout(timer)
+  }, [companyId, name, page, revision, size])
 
-    async function load() {
-      try {
-        const [loadedContacts, companies] = await Promise.all([
-          loadAllPages((page) => getContacts({ page, size: 100 })),
-          loadAllPages((page) => getCompanies({ page, size: 100 })),
-        ])
+  const refresh = useCallback(() => setRevision((value) => value + 1), [])
 
-        if (!isCancelled) {
-          setContacts(loadedContacts)
-          setCompanyNames(new Map(companies.map((company) => [company.id, company.companyName])))
-          setError(null)
-        }
-      } catch (requestError) {
-        if (!isCancelled) {
-          setError(
-            requestError instanceof Error ? requestError.message : 'Could not load contacts.',
-          )
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void load()
-    return () => {
-      isCancelled = true
-    }
-  }, [])
-
-  return { contacts, companyNames, isLoading, error }
+  return { contacts: result?.content ?? [], result, isLoading, error, retry: refresh, refresh }
 }

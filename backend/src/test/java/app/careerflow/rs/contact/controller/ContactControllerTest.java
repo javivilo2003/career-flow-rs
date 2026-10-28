@@ -1,6 +1,7 @@
 package app.careerflow.rs.contact.controller;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -61,6 +62,7 @@ class ContactControllerTest {
                 .param("direction", "DESC"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+            .andExpect(jsonPath("$.content[0].companyID").value(companyId.toString()))
             .andExpect(jsonPath("$.content[0].name").value("Ada"))
             .andExpect(jsonPath("$.number").value(1))
             .andExpect(jsonPath("$.size").value(5))
@@ -83,14 +85,23 @@ class ContactControllerTest {
     }
 
     @Test
-    void createContactPassesValidRequestToService() throws Exception {
+    void createContactReturnsPersistedContact() throws Exception {
         UUID companyId = UUID.randomUUID();
+        UUID contactId = UUID.randomUUID();
+        when(service.addNewContact(argThat(request ->
+            companyId.equals(request.companyId()) && "Ada".equals(request.name())
+        ))).thenReturn(new ContactDTO(contactId, companyId, "Ada", null, null, "CTO"));
+
         mockMvc.perform(post("/api/contacts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"companyId":"%s","name":"Ada","jobRole":"CTO"}
                     """.formatted(companyId)))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(contactId.toString()))
+            .andExpect(jsonPath("$.companyID").value(companyId.toString()))
+            .andExpect(jsonPath("$.name").value("Ada"))
+            .andExpect(jsonPath("$.jobRole").value("CTO"));
 
         verify(service).addNewContact(argThat(request ->
             companyId.equals(request.companyId()) && "Ada".equals(request.name())
@@ -109,6 +120,37 @@ class ContactControllerTest {
             .andExpect(jsonPath("$.error.details[*].field", hasItem("jobRole")));
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void createAllowsMultipleContactsWithTheSameJobRole() throws Exception {
+        UUID companyId = UUID.randomUUID();
+        when(service.addNewContact(any())).thenReturn(
+            new ContactDTO(UUID.randomUUID(), companyId, "Ada", null, null, "Recruiter"),
+            new ContactDTO(UUID.randomUUID(), companyId, "Grace", null, null, "Recruiter")
+        );
+
+        mockMvc.perform(post("/api/contacts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"companyId":"%s","name":"Ada","jobRole":"Recruiter"}
+                    """.formatted(companyId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.jobRole").value("Recruiter"));
+        mockMvc.perform(post("/api/contacts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"companyId":"%s","name":"Grace","jobRole":"Recruiter"}
+                    """.formatted(companyId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.jobRole").value("Recruiter"));
+
+        verify(service).addNewContact(argThat(request ->
+            "Ada".equals(request.name()) && "Recruiter".equals(request.jobRole())
+        ));
+        verify(service).addNewContact(argThat(request ->
+            "Grace".equals(request.name()) && "Recruiter".equals(request.jobRole())
+        ));
     }
 
     @Test

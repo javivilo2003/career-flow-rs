@@ -125,6 +125,13 @@ public class CompanyServiceTest {
         var result = service.updateCompany(id, request);
 
         assertThat(result.companyName()).isEqualTo("Updated");
+        assertThat(result.companyAddress()).isEqualTo("Madrid");
+        assertThat(result.bio()).isEqualTo("Bio");
+        assertThat(result.websiteUrl()).isEqualTo("https://example.com");
+        assertThat(company.getCompanyName()).isEqualTo("Updated");
+        assertThat(company.getCompanyAddress()).isEqualTo("Madrid");
+        assertThat(company.getBio()).isEqualTo("Bio");
+        assertThat(company.getWebsiteUrl()).isEqualTo("https://example.com");
         verify(repository).save(company);
     }
 

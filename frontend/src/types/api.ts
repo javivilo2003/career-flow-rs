@@ -61,6 +61,15 @@ export type FollowUp = {
   completed: boolean
 }
 
+/** Follow-up wire shape. The API retains `applicationId`; the API adapter maps it to the domain name. */
+export type FollowUpResponse = {
+  id: string
+  applicationId: string
+  title: string
+  dueDate: string
+  completed: boolean
+}
+
 export type Note = {
   id: string
   jobApplicationId: string

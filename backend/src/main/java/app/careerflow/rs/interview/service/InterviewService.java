@@ -120,18 +120,19 @@ public class InterviewService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found"));
     }
 
-    public void addNewInterview(InterviewRequest request) throws ResourceNotFoundException{
+    public InterviewDTO addNewInterview(InterviewRequest request) throws ResourceNotFoundException{
         JobApplication application = jobApplicationRepository.findById(request.jobApplicationId())
             .orElseThrow(() -> new ResourceNotFoundException(request.jobApplicationId() + " not found."));
 
         Interview interview = mapper.toEntityInterview(request, application);
-        repository.save(interview);
+        Interview savedInterview = repository.save(interview);
         log.info(
             "Created interview id={} applicationId={} status={}",
-            interview.getId(),
+            savedInterview.getId(),
             request.jobApplicationId(),
             request.status()
         );
+        return mapper.apply(savedInterview);
     }
 
     public InterviewDTO updateInterview(UUID id, InterviewRequest request) throws ResourceNotFoundException {
