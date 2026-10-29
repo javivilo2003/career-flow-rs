@@ -1,5 +1,6 @@
 package app.careerflow.rs.user.mapper;
 
+import java.sql.Timestamp;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class UserMapper implements Function<User, UserDTO>{
             t.getUsername(),
             t.getDob(),
             t.getCv(),
-            t.getCreatedAt()
+            t.getCreatedAt() == null ? null : Timestamp.from(t.getCreatedAt())
         );
     }
 
@@ -32,4 +33,3 @@ public class UserMapper implements Function<User, UserDTO>{
     
 }
     
-

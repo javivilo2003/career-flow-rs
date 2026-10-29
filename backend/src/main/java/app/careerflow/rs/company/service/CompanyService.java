@@ -1,7 +1,8 @@
 package app.careerflow.rs.company.service;
 
 
-import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -130,15 +131,15 @@ public class CompanyService {
             }
 
             if (filter.createdAt() != null) {
-                Timestamp start = Timestamp.valueOf(
-                    filter.createdAt().atStartOfDay()
-                );
+                Instant start = filter.createdAt()
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant();
 
-                Timestamp end = Timestamp.valueOf(
+                Instant end =
                     filter.createdAt()
                         .plusDays(1)
-                        .atStartOfDay()
-                );
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant();
 
                 predicates.add(
                     builder.greaterThanOrEqualTo(

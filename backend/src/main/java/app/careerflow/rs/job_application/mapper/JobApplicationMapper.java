@@ -26,7 +26,9 @@ public class JobApplicationMapper implements Function<JobApplication, JobApplica
             t.getStatus(),
             t.getAppliedAt(),
             t.getSource(),
-            t.getPostingLink()
+            t.getPostingLink(),
+            t.getCreatedAt(),
+            t.getUpdatedAt()
         );
     }
 

@@ -17,7 +17,9 @@ public class NoteMapper implements Function<Note, NoteDTO> {
         return new NoteDTO(
             t.getId(),
             t.getApplication().getId(),
-            t.getContent()
+            t.getContent(),
+            t.getCreatedAt(),
+            t.getUpdatedAt()
         );
     }
 

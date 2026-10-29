@@ -1,6 +1,7 @@
 package app.careerflow.rs.user.domain;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -39,5 +40,12 @@ public class User {
     private String cv;
 
     @Column(insertable = false, updatable = false)
-    private Timestamp createdAt;
+    private Instant createdAt;
+
+    public static class UserBuilder {
+        public UserBuilder createdAt(Timestamp createdAt) {
+            this.createdAt = createdAt == null ? null : createdAt.toInstant();
+            return this;
+        }
+    }
 }

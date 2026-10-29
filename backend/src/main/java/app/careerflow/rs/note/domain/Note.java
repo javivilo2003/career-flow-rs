@@ -1,6 +1,6 @@
 package app.careerflow.rs.note.domain;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
 import app.careerflow.rs.job_application.domain.JobApplication;
@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Setter
 @Getter
@@ -41,8 +42,10 @@ public class Note {
     @NotNull
     private String content;
 
-    @Column(insertable = false, updatable = false)
-    private Timestamp createdAt; 
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
+    private Instant updatedAt;
 
 }

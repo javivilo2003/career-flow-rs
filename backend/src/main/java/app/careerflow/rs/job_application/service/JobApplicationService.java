@@ -1,10 +1,12 @@
 package app.careerflow.rs.job_application.service;
 
-import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,15 +199,15 @@ public class JobApplicationService {
             }
 
             if (filter.createdAt() != null) {
-                Timestamp start = Timestamp.valueOf(
-                    filter.createdAt().atStartOfDay()
-                );
+                Instant start = filter.createdAt()
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant();
 
-                Timestamp end = Timestamp.valueOf(
+                Instant end =
                     filter.createdAt()
                         .plusDays(1)
-                        .atStartOfDay()
-                );
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant();
 
                 predicates.add(
                     builder.greaterThanOrEqualTo(
@@ -257,6 +260,7 @@ public class JobApplicationService {
             .orElseThrow(() -> new ResourceNotFoundException(id + " not found."));
     }
 
+    @Transactional
     public JobApplicationDTO addNewJobApplication(JobApplicationRequest request) throws Exception{
         Company company = companyRepository.findById(request.companyId())
             .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
@@ -266,8 +270,10 @@ public class JobApplicationService {
             .orElseThrow(() -> new ResourceNotFoundException(ownerId + " not found."));
 
         JobApplication application = mapper.toEntity(request, company, user);
+        application.recordStatusTransition(null, request.status());
 
         repository.save(application);
+        repository.flush();
 
         log.info(
             "Created application id={} userId={} companyId={} status={}",
@@ -280,6 +286,7 @@ public class JobApplicationService {
         return mapper.apply(application);
     }
 
+    @Transactional
     public JobApplicationDTO updateJobApplication(UUID id, JobApplicationRequest request) throws ResourceNotFoundException{
         Company company = companyRepository.findById(request.companyId())
             .orElseThrow(() -> new ResourceNotFoundException(request.companyId() + " not found."));
@@ -293,6 +300,18 @@ public class JobApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException(request.userId() + " not found."));
         }
 
+        var previousStatus = application.getStatus();
+        boolean changed = !application.getUser().getId().equals(user.getId())
+            || !application.getCompany().getId().equals(company.getId())
+            || !Objects.equals(application.getPosition(), request.position())
+            || !Objects.equals(application.getJobType(), request.jobType())
+            || !Objects.equals(application.getDescription(), request.description())
+            || !Objects.equals(application.getSalary(), request.salary())
+            || application.getStatus() != request.status()
+            || !Objects.equals(application.getAppliedAt(), request.appliedAt())
+            || !Objects.equals(application.getSource(), request.source())
+            || !Objects.equals(application.getPostingLink(), request.postingLink());
+
         application.setUser(user);
         application.setCompany(company);
         application.setPosition(request.position());
@@ -304,7 +323,16 @@ public class JobApplicationService {
         application.setSource(request.source());
         application.setPostingLink(request.postingLink());
 
+        if (changed) {
+            application.setUpdatedAt(Instant.now());
+        }
+
+        if (previousStatus != request.status()) {
+            application.recordStatusTransition(previousStatus, request.status());
+        }
+
         repository.save(application);
+        repository.flush();
 
         JobApplicationDTO dto = mapper.apply(application);
 

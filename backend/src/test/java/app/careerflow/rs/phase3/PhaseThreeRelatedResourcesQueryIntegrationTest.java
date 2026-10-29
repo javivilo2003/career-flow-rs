@@ -77,7 +77,7 @@ class PhaseThreeRelatedResourcesQueryIntegrationTest {
             .companyName("Phase Three Beta " + UUID.randomUUID())
             .build());
         User owner = userRepository.save(User.builder()
-            .username("phase-three-owner-" + UUID.randomUUID())
+            .username("p3-owner-" + UUID.randomUUID().toString().substring(0, 8))
             .build());
         firstApplication = saveApplication(owner, firstCompany, "Platform Engineer");
         secondApplication = saveApplication(owner, secondCompany, "Product Engineer");

@@ -1,9 +1,11 @@
 package app.careerflow.rs.note.service;
 
-import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -87,8 +89,8 @@ public class NoteService {
                 ));
             }
             if (filter.createdAt() != null) {
-                Timestamp start = Timestamp.valueOf(filter.createdAt().atStartOfDay());
-                Timestamp end = Timestamp.valueOf(filter.createdAt().plusDays(1).atStartOfDay());
+                Instant start = filter.createdAt().atStartOfDay(ZoneOffset.UTC).toInstant();
+                Instant end = filter.createdAt().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
                 predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), start));
                 predicates.add(builder.lessThan(root.get("createdAt"), end));
             }
@@ -113,6 +115,7 @@ public class NoteService {
 
         Note note = mapper.toEntityNote(request, application);
         Note savedNote = repository.save(note);
+        repository.flush();
         log.info(
             "Created note id={} applicationId={}",
             savedNote.getId(),
@@ -126,10 +129,17 @@ public class NoteService {
         JobApplication application = jobApplicationRepository.findById(request.jobApplicationId())
             .orElseThrow(() -> new ResourceNotFoundException(request.jobApplicationId() + " not found."));
 
+        boolean changed = note.getApplication() == null
+            || !note.getApplication().getId().equals(application.getId())
+            || !Objects.equals(note.getContent(), request.content());
         note.setApplication(application);
         note.setContent(request.content());
+        if (changed) {
+            note.setUpdatedAt(Instant.now());
+        }
 
         repository.save(note);
+        repository.flush();
         
         NoteDTO dto = mapper.apply(note);
 

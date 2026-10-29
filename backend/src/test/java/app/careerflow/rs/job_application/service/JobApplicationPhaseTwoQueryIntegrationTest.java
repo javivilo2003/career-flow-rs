@@ -44,7 +44,6 @@ class JobApplicationPhaseTwoQueryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        applicationRepository.deleteAll();
         alphaCompany = companyRepository.save(Company.builder()
             .companyName("Alpha Phase Two " + UUID.randomUUID())
             .build());
@@ -52,7 +51,7 @@ class JobApplicationPhaseTwoQueryIntegrationTest {
             .companyName("Beta Phase Two " + UUID.randomUUID())
             .build());
         owner = userRepository.save(User.builder()
-            .username("phase-two-owner-" + UUID.randomUUID())
+            .username("p2-owner-" + UUID.randomUUID().toString().substring(0, 8))
             .build());
     }
 

@@ -1,6 +1,6 @@
 package app.careerflow.rs.company.domain;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
@@ -40,5 +40,5 @@ public class Company {
     private String websiteUrl;
 
     @Column(insertable = false, updatable = false)
-    private Timestamp createdAt;
+    private Instant createdAt;
 }

@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,10 +84,11 @@ class NoteControllerTest {
     void createNoteReturnsPersistedNoteAndAssociation() throws Exception {
         UUID applicationId = UUID.randomUUID();
         UUID noteId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2026-10-28T10:00:00Z");
         when(service.addNewNote(argThat(request ->
             applicationId.equals(request.jobApplicationId())
                 && "Follow up".equals(request.content())
-        ))).thenReturn(new NoteDTO(noteId, applicationId, "Follow up"));
+        ))).thenReturn(new NoteDTO(noteId, applicationId, "Follow up", createdAt, null));
 
         mockMvc.perform(post("/api/notes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -96,7 +98,9 @@ class NoteControllerTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(noteId.toString()))
             .andExpect(jsonPath("$.jobApplicationId").value(applicationId.toString()))
-            .andExpect(jsonPath("$.content").value("Follow up"));
+            .andExpect(jsonPath("$.content").value("Follow up"))
+            .andExpect(jsonPath("$.createdAt").value("2026-10-28T10:00:00Z"))
+            .andExpect(jsonPath("$.updatedAt").isEmpty());
 
         verify(service).addNewNote(argThat(request ->
             applicationId.equals(request.jobApplicationId())

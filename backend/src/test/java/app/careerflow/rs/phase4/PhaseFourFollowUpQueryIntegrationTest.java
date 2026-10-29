@@ -56,7 +56,7 @@ class PhaseFourFollowUpQueryIntegrationTest {
             .companyName("Phase Four " + UUID.randomUUID())
             .build());
         User owner = userRepository.save(User.builder()
-            .username("phase-four-owner-" + UUID.randomUUID())
+            .username("p4-owner-" + UUID.randomUUID().toString().substring(0, 8))
             .build());
         firstApplication = saveApplication(owner, company, "Platform Engineer");
         secondApplication = saveApplication(owner, company, "Product Engineer");

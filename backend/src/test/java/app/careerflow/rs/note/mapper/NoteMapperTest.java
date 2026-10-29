@@ -2,6 +2,7 @@ package app.careerflow.rs.note.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -18,15 +19,22 @@ class NoteMapperTest {
     void mapsEntityToDto() {
         UUID id = UUID.randomUUID();
         UUID applicationId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2026-10-28T10:00:00Z");
+        Instant updatedAt = Instant.parse("2026-10-28T11:00:00Z");
         Note note = Note.builder().id(id)
             .application(JobApplication.builder().id(applicationId).build())
-            .content("Remember to follow up").build();
+            .content("Remember to follow up")
+            .createdAt(createdAt)
+            .updatedAt(updatedAt)
+            .build();
 
         var dto = mapper.apply(note);
 
         assertThat(dto.id()).isEqualTo(id);
         assertThat(dto.jobApplicationId()).isEqualTo(applicationId);
         assertThat(dto.content()).isEqualTo("Remember to follow up");
+        assertThat(dto.createdAt()).isEqualTo(createdAt);
+        assertThat(dto.updatedAt()).isEqualTo(updatedAt);
     }
 
     @Test
