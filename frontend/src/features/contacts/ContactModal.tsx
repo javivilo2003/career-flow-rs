@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useState } from 'react'
+import { type FormEvent, type RefObject, useId, useRef, useState } from 'react'
 
 import { getCompanies } from '../../apis/companies'
 import type { ContactRequest } from '../../apis/contacts'
@@ -105,7 +105,8 @@ function ContactForm({
   company,
   fixedCompany,
   titleId,
-}: Omit<ContactModalProps, 'open'> & { titleId: string }) {
+  submittingRef,
+}: Omit<ContactModalProps, 'open'> & { titleId: string; submittingRef: RefObject<boolean> }) {
   const seed = fixedCompany ?? company
   const [draft, setDraft] = useState(() => initialDraft(contact, seed))
   const [selectedCompany, setSelectedCompany] = useState<Company | undefined>(seed)
@@ -126,7 +127,7 @@ function ContactForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (submitting) {
+    if (submittingRef.current) {
       return
     }
     const nextErrors = validateContact(draft)
@@ -134,6 +135,7 @@ function ContactForm({
     if (Object.keys(nextErrors).length) {
       return
     }
+    submittingRef.current = true
     setSubmitting(true)
     setSubmitError('')
     try {
@@ -150,6 +152,7 @@ function ContactForm({
     } catch (reason) {
       setSubmitError(reason instanceof Error ? reason.message : 'Could not save the contact.')
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -158,9 +161,9 @@ function ContactForm({
     <form
       onSubmit={(event) => void submit(event)}
       noValidate
-      className="flex w-[680px] max-w-full flex-col gap-6 rounded-[24px] bg-surface p-5 text-left sm:p-8"
+      className="flex max-h-[calc(100dvh-32px)] w-[680px] max-w-full flex-col gap-6 overflow-hidden rounded-[24px] bg-surface p-5 text-left sm:p-8"
     >
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex shrink-0 items-start justify-between gap-4">
         <div>
           <h2 id={titleId} className="m-0 text-[28px] font-bold text-heading">
             {contact ? 'Edit contact' : 'Add contact'}
@@ -178,61 +181,63 @@ function ContactForm({
           <Icon name="modal-x" />
         </button>
       </header>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Input
-          data-autofocus
-          label="Name *"
-          required
-          value={draft.name}
-          error={errors.name}
-          onChange={(event) => update('name', event.target.value)}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pr-1">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Input
+            data-autofocus
+            label="Name *"
+            required
+            value={draft.name}
+            error={errors.name}
+            onChange={(event) => update('name', event.target.value)}
+          />
+          <Input
+            label="Job role *"
+            required
+            value={draft.jobRole}
+            error={errors.jobRole}
+            onChange={(event) => update('jobRole', event.target.value)}
+          />
+        </div>
+        <ContactCompanyField
+          fixedCompany={fixedCompany}
+          search={search}
+          query={query}
+          selectedCompany={selectedCompany}
+          error={errors.companyId}
+          submitting={submitting}
+          change={(value) => {
+            setQuery(value)
+            setSelectedCompany(undefined)
+            update('companyId', '')
+          }}
+          select={(value) => {
+            setSelectedCompany(value)
+            setQuery(value.companyName)
+            update('companyId', value.id)
+          }}
         />
-        <Input
-          label="Job role *"
-          required
-          value={draft.jobRole}
-          error={errors.jobRole}
-          onChange={(event) => update('jobRole', event.target.value)}
-        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Input
+            label="Email"
+            type="email"
+            value={draft.email}
+            onChange={(event) => update('email', event.target.value)}
+          />
+          <Input
+            label="Phone"
+            type="tel"
+            value={draft.phone}
+            onChange={(event) => update('phone', event.target.value)}
+          />
+        </div>
+        {submitError && (
+          <p role="alert" className="m-0 text-sm text-danger">
+            {submitError}
+          </p>
+        )}
       </div>
-      <ContactCompanyField
-        fixedCompany={fixedCompany}
-        search={search}
-        query={query}
-        selectedCompany={selectedCompany}
-        error={errors.companyId}
-        submitting={submitting}
-        change={(value) => {
-          setQuery(value)
-          setSelectedCompany(undefined)
-          update('companyId', '')
-        }}
-        select={(value) => {
-          setSelectedCompany(value)
-          setQuery(value.companyName)
-          update('companyId', value.id)
-        }}
-      />
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Input
-          label="Email"
-          type="email"
-          value={draft.email}
-          onChange={(event) => update('email', event.target.value)}
-        />
-        <Input
-          label="Phone"
-          type="tel"
-          value={draft.phone}
-          onChange={(event) => update('phone', event.target.value)}
-        />
-      </div>
-      {submitError && (
-        <p role="alert" className="m-0 text-sm text-danger">
-          {submitError}
-        </p>
-      )}
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-[23px]">
+      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-border pt-[23px]">
         <p className="m-0 text-xs text-body">* Required fields</p>
         <div className="flex w-full gap-3 sm:w-auto">
           <Button variant="secondary" className="flex-1 sm:flex-none" onClick={onClose}>
@@ -249,9 +254,15 @@ function ContactForm({
 
 export default function ContactModal({ open, ...props }: ContactModalProps) {
   const titleId = useId()
+  const submittingRef = useRef(false)
+  const close = () => {
+    if (!submittingRef.current) {
+      props.onClose()
+    }
+  }
   return (
-    <Modal open={open} onClose={props.onClose} labelledBy={titleId} className="w-[680px]">
-      <ContactForm {...props} titleId={titleId} />
+    <Modal open={open} onClose={close} labelledBy={titleId} className="w-[680px]">
+      <ContactForm {...props} onClose={close} titleId={titleId} submittingRef={submittingRef} />
     </Modal>
   )
 }

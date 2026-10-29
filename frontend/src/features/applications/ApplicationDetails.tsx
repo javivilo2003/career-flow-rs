@@ -9,6 +9,8 @@ import ApplicationFollowUpsSection from '../followups/ApplicationFollowUpsSectio
 import ApplicationInterviewsSection from '../interviews/ApplicationInterviewsSection'
 import CompanyContactsSection from '../interviews/CompanyContactsSection'
 import ApplicationNotesSection from '../notes/ApplicationNotesSection'
+import ApplicationActivitySection from './ApplicationActivity'
+import { formatApplicationTimestamp } from './applicationDates'
 import useApplicationDetails from './useApplicationDetails'
 
 export type ApplicationDetailsContentProps = {
@@ -56,6 +58,26 @@ export function ApplicationDetailsContent({
               <dt className="text-xs text-body">Source</dt>
               <dd className="m-0 mt-1 text-sm break-words text-secondary">{application.source}</dd>
             </div>
+            <div>
+              <dt className="text-xs text-body">Created</dt>
+              <dd className="m-0 mt-1 text-sm text-secondary">
+                <time dateTime={application.createdAt}>
+                  {formatApplicationTimestamp(application.createdAt)}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-body">Last updated</dt>
+              <dd className="m-0 mt-1 text-sm text-secondary">
+                {application.updatedAt ? (
+                  <time dateTime={application.updatedAt}>
+                    {formatApplicationTimestamp(application.updatedAt)}
+                  </time>
+                ) : (
+                  'Not updated yet'
+                )}
+              </dd>
+            </div>
           </dl>
           {application.description ? (
             <p className="mt-5 text-sm break-words whitespace-pre-wrap text-secondary">
@@ -75,6 +97,7 @@ export function ApplicationDetailsContent({
             </a>
           )}
         </section>
+        <ApplicationActivitySection application={application} />
         <section className="rounded-[24px] bg-surface p-6">
           <h2 className="m-0 text-xl font-bold text-heading">Company</h2>
           <p className="m-0 mt-3 break-words text-secondary">{company.companyName}</p>

@@ -11,7 +11,11 @@ export default function useContactDetails(contactId: string | undefined) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [revision, setRevision] = useState(0)
-  const retry = useCallback(() => setRevision((value) => value + 1), [])
+  const retry = useCallback(() => {
+    setIsLoading(true)
+    setError(null)
+    setRevision((value) => value + 1)
+  }, [])
 
   useEffect(() => {
     let cancelled = false

@@ -25,6 +25,63 @@ export type JobApplication = {
   appliedAt: string | null
   source: string
   postingLink: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
+export type ApplicationStatusEvent = {
+  id: string
+  applicationId: string
+  previousStatus: ApplicationStatus | null
+  newStatus: ApplicationStatus
+  occurredAt: string
+}
+
+export type ProgressAnalytics = {
+  period: {
+    from: string | null
+    to: string | null
+    timezone: 'UTC'
+    startInclusive: string | null
+    endExclusive: string
+  }
+  coverage: {
+    instrumentedCohortCount: number
+    legacyApplicationCount: number
+    earliestTrackingInstant: string | null
+  }
+  funnel: {
+    submittedCount: number
+    interviewingCount: number
+    offerCount: number
+    interviewReachAmongSubmittedCount: number
+    offerAmongSubmittedCount: number
+    interviewReachRate: number | null
+    offerRate: number | null
+  }
+  activity: {
+    applicationsCreated: number
+    appliedEvents: number
+    genuineTransitions: number
+    daily: Array<{
+      date: string
+      applicationsCreated: number
+      appliedEvents: number
+      genuineTransitions: number
+    }>
+  }
+  duration: {
+    medianSubmittedToInterviewOrOfferHours: number | null
+    sampleCount: number
+  }
+  definitions: {
+    cohort: string
+    stageReach: string
+    rates: string
+    activity: string
+    duration: string
+    dailyBuckets: string
+  }
 }
 
 export type Company = {
@@ -74,6 +131,8 @@ export type Note = {
   id: string
   jobApplicationId: string
   content: string
+  createdAt: string
+  updatedAt: string | null
 }
 
 export type User = {

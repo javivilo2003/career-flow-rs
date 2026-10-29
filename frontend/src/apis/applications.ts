@@ -1,4 +1,10 @@
-import type { ApiErrorResponse, ApplicationStatus, JobApplication, Page } from '../types/api'
+import type {
+  ApiErrorResponse,
+  ApplicationStatus,
+  ApplicationStatusEvent,
+  JobApplication,
+  Page,
+} from '../types/api'
 
 export type JobApplicationRequest = {
   userId?: string | null
@@ -181,6 +187,16 @@ export async function getApplication(id: string): Promise<JobApplication> {
   }
 
   return response.json() as Promise<JobApplication>
+}
+
+export async function getApplicationHistory(id: string): Promise<ApplicationStatusEvent[]> {
+  const response = await fetch(`/api/applications/${encodeURIComponent(id)}/history`)
+
+  if (!response.ok) {
+    return throwApiError(response, 'Could not load application activity.')
+  }
+
+  return response.json() as Promise<ApplicationStatusEvent[]>
 }
 
 export async function createApplication(

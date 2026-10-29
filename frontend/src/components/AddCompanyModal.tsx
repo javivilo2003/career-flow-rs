@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useState } from 'react'
+import { type FormEvent, useId, useRef, useState } from 'react'
 
 import Button from './Button'
 import Icon from './Icon'
@@ -65,6 +65,12 @@ export default function AddCompanyModal({
   const [errors, setErrors] = useState<CompanyErrors>({})
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
+  const close = () => {
+    if (!submittingRef.current) {
+      onClose()
+    }
+  }
 
   function update(key: keyof CompanyDraft, value: string) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -73,7 +79,7 @@ export default function AddCompanyModal({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (submitting) {
+    if (submittingRef.current) {
       return
     }
 
@@ -83,6 +89,7 @@ export default function AddCompanyModal({
       return
     }
 
+    submittingRef.current = true
     setSubmitting(true)
     setSubmitError('')
     try {
@@ -97,16 +104,17 @@ export default function AddCompanyModal({
     } catch (reason) {
       setSubmitError(reason instanceof Error ? reason.message : 'Could not save the company.')
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} labelledBy={titleId} className="w-[680px]">
+    <Modal open={open} onClose={close} labelledBy={titleId} className="w-[680px]">
       <form
         noValidate
         onSubmit={(event) => void submit(event)}
-        className="flex max-h-[calc(100dvh-32px)] min-h-[656px] max-w-full flex-col gap-6 rounded-[24px] bg-surface p-8 text-left leading-normal"
+        className="flex h-[656px] max-h-[calc(100dvh-32px)] max-w-full flex-col gap-6 overflow-hidden rounded-[24px] bg-surface p-5 text-left leading-normal sm:p-8"
       >
         <header className="flex shrink-0 items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -120,14 +128,14 @@ export default function AddCompanyModal({
           <button
             type="button"
             aria-label="Close dialog"
-            onClick={onClose}
+            onClick={close}
             className="flex size-8 shrink-0 items-center justify-center"
           >
             <Icon name="modal-x" />
           </button>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pr-1">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Input
               label="Company name *"
@@ -175,7 +183,7 @@ export default function AddCompanyModal({
             <Button
               variant="secondary"
               className="min-w-0 flex-1 sm:w-[100px] sm:flex-none"
-              onClick={onClose}
+              onClick={close}
             >
               Cancel
             </Button>

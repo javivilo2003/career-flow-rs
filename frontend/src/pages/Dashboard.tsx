@@ -1,4 +1,5 @@
 import ApplicationSummarySection from '../features/dashboard/ApplicationSummarySection'
+import HistoricalAnalysisSection from '../features/dashboard/HistoricalAnalysisSection'
 import InterviewStatusSection from '../features/dashboard/InterviewStatusSection'
 
 export default function Dashboard() {
@@ -15,6 +16,7 @@ export default function Dashboard() {
         <ApplicationSummarySection />
         <InterviewStatusSection />
       </div>
+      <HistoricalAnalysisSection />
     </main>
   )
 }

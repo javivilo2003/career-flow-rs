@@ -24,7 +24,7 @@ export default function AppHeader() {
         </Link>
         <nav
           aria-label="Primary navigation"
-          className="flex w-full gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0"
+          className="flex w-full min-w-0 flex-wrap gap-2 sm:w-auto sm:flex-nowrap"
         >
           {navigationItems.map((item) => (
             <NavLink key={item.to} to={item.to} className={navigationClassName}>

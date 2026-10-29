@@ -121,7 +121,6 @@ export default function ContactsPage() {
           selectedCompanyId={companyData.company?.id ?? ''}
           onQueryChange={(value) => {
             companyData.setQuery(value)
-            companyData.setCompany(undefined)
             setUrlCompany()
             setPage(0)
           }}

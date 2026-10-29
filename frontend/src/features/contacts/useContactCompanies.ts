@@ -80,13 +80,12 @@ export function useContactCompanySelection(initialCompanyId: string | null) {
   const matchesUrl = selection.companyId === initialCompanyId
   return {
     company: matchesUrl ? selection.company : undefined,
-    query: matchesUrl ? selection.query : '',
+    query: selection.companyId === null || matchesUrl ? selection.query : '',
     loading: Boolean(initialCompanyId && (!matchesUrl || selection.loading)),
     error: matchesUrl ? selection.error : null,
     retry,
-    setCompany: (company: Company | undefined) =>
-      setSelection((current) => ({ ...current, company })),
-    setQuery: (query: string) => setSelection((current) => ({ ...current, query })),
+    setQuery: (query: string) =>
+      setSelection({ companyId: null, company: undefined, query, loading: false, error: null }),
     clear,
     select,
   }
